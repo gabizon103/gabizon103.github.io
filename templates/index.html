@@ -1,8 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="title">
+<h2 class="title">
   Ethan Gabizon
-</h1>
-<p><a href="{{ get_url(path='@/blog/_index.md') }}">Posts</a>.</p>
+</h2>
+
+<p>
+    Hello, I'm Ethan. I am currently an undergrad at Cornell, graduating in May 2025 with a BS in Electrical & Computer Engineering. 
+</p>
+<p>
+    I'm interested in computer architecture, programming languages, and compilers. I've spent much of my undergrad doing research
+    with Adrian Sampson and Rachit Nigam in the Capra lab where I contribute to Filament, a novel hardware description language and compiler
+    for designing statically-scheduled circuits with strong parametric correctness guarantees. 
+</p>
+
+<h3><a href="{{ get_url(path='@/blog/_index.md') }}">Blog Posts</a></h3>
+
+<ul>
+  {% for page in section.pages %}
+  <li><a href="{{ get_url(path='@/blog/first.md') }}">First post</a></li>
+  <li>hi</li>
+  {% endfor %}
+</ul>
+
+<center><h4><img src="{{ get_url(path='ethan.JPG') }}"></h4></center>
 {% endblock content %}
