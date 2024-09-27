@@ -154,7 +154,7 @@ to confirm:
 ```
 
 Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
-using `*`. `mult_s1`, `mult_s2`, and `mult_s3` each represent the pipeline registers we use to store the result of each stage.
+using `*`. `mult_s1`, `mult_s2`, `mult_s3`, and `mult_s4` each represent the pipeline registers we use to store the result of each stage.
 the `always_ff` block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
 set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.
 
