@@ -5,7 +5,7 @@ date = 2024-09-16
 
 These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
 has been an HDL like SystemVerilog or VHDL. Many people (me included) are dissatisfied with this; traditional HDLs provide
-a very low-level programming model that makes designing and testing hardware incredibly slow and error-prone. In response,
+a very tedious and error-prone programming model. In response,
 a lot of very smart people have thought up interesting alternatives to traditional HDLs with the goal of making hardware design
 more accessible and productive (links to come). Here, I'll talk about the one I work on: [Filament](https://filamenthdl.com).
 
