@@ -25,7 +25,7 @@
 
 
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://gabizon103.github.io/blog/filament1/">
+<meta property="og:url" content="https://gabizon103.github.io/drafts/intro-filament/">
 
 <meta property="og:site_name" content="">
 
@@ -37,14 +37,14 @@
 
 
 <meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:url" content="https://gabizon103.github.io/blog/filament1/">
+<meta property="twitter:url" content="https://gabizon103.github.io/drafts/intro-filament/">
 
 <meta property="twitter:title" content="Draft: An Introduction to Filament">
 
 
 
 
-<link rel="canonical" href="https://gabizon103.github.io/blog/filament1/">
+<link rel="canonical" href="https://gabizon103.github.io/drafts/intro-filament/">
 
 
 
@@ -66,10 +66,10 @@
       </header>
       <main>
           
-<h1 class="title">
-  Draft: An Introduction to Filament
-</h1>
-<p class="subtitle"><strong>2024-09-16</strong></p>
+<h1>Draft: An Introduction to Filament</h1>
+
+
+
 <p>These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
 has been an HDL like SystemVerilog or VHDL. Many people (me included) are dissatisfied with this; traditional HDLs provide
 a very low-level programming model that makes designing and testing hardware incredibly slow and error-prone. In response,
@@ -161,7 +161,7 @@ waveform that we generated from our test bench.</p>
   <img src="content&#x2F;blog&#x2F;filament1&#x2F;img.png" >
   
 </div> -->
-<p><img src="https://gabizon103.github.io/blog/filament1/image.png" alt="alt text" /></p>
+<p><img src="https://gabizon103.github.io/drafts/intro-filament/image.png" alt="alt text" /></p>
 <p>At cycle 0, we see that <code>opsel</code> is 1, meaning we are computing the addition. In that same cycle, <code>out</code> is 6, meaning
 we got the result of the addition in the same cycle. This makes sense, because addition is combinational. In the next cycle,
 we set <code>opsel</code> to 0. However, <code>out</code> doesn't become 8 until cycle 3.</p>
@@ -367,6 +367,10 @@ compute its output if it detects that one of its operands is a power of two, for
 currently be expressed in Filament.</p>
 <p>Still, this post has only scratched the surface of what is possible in Filament. We'll get into the rest of it in future posts.</p>
 
+
+<p class="tags-data">
+
+</p>
 
       </main>
       <footer>
