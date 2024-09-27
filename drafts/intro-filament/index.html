@@ -188,7 +188,7 @@ to confirm:</p>
 </span><span>    assign out = mult_s4;
 </span></code></pre>
 <p>Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
-using <code>*</code>. <code>mult_s1</code>, <code>mult_s2</code>, and <code>mult_s3</code> each represent the pipeline registers we use to store the result of each stage.
+using <code>*</code>. <code>mult_s1</code>, <code>mult_s2</code>, <code>mult_s3</code>, and <code>mult_s4</code> each represent the pipeline registers we use to store the result of each stage.
 the <code>always_ff</code> block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
 set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.</p>
 <p>The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
