@@ -124,8 +124,7 @@ waveform that we generated from our test bench.
 <!-- {{ img(id="content/blog/filament1/img.png") }} -->
 ![alt text](image.png)
 
-At cycle 0, we see that `opsel` is 1, meaning we are computing the addition. In that same cycle, `out` is 6, meaning
-we got the result of the addition in the same cycle. This makes sense, because addition is combinational. In the next cycle,
+At cycle 0, we see that `opsel` is 1, meaning we are computing the addition. In that same cycle, `out` is 6. This makes sense, because addition is combinational. In the next cycle,
 we set `opsel` to 0. However, `out` doesn't become 8 until cycle 3.
 
 Aha! This is an important clue. Implicit in our ALU design was our assumption that the multiplier would return its output
