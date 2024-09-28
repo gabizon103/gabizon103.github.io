@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<meta name="robots" content="index, follow">
+
+
+
+
+
+
+
+
+
+
+<title>Draft: An Introduction to Filament</title>
+
+
+
+<meta name="title" content="Draft: An Introduction to Filament">
+
+
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gabizon103.github.io/drafts/intro-filament/">
+
+<meta property="og:site_name" content="">
+
+
+<meta property="og:title" content="Draft: An Introduction to Filament">
+
+
+
+
+
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://gabizon103.github.io/drafts/intro-filament/">
+
+<meta property="twitter:title" content="Draft: An Introduction to Filament">
+
+
+
+
+<link rel="canonical" href="https://gabizon103.github.io/drafts/intro-filament/">
+
+
+
+
+<link rel="stylesheet" type="text/css" href="https://speyll.github.io/suCSS/reset-min.css"/>
+<link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/suCSS-min.css"/>
+<link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/style.css"/>
+
+<script src="https://gabizon103.github.io/js/script.js" defer></script>
+</head>
+<body>
+      <header>
+          
+
+  
+
+
+
+      </header>
+      <main>
+          
+<h1>Draft: An Introduction to Filament</h1>
+
+
+
+<p>These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
+has been an HDL like SystemVerilog or VHDL. Many people (me included) are dissatisfied with this; traditional HDLs provide
+a very tedious and error-prone programming model. In response,
+a lot of very smart people have thought up interesting alternatives to traditional HDLs with the goal of making hardware design
+more accessible and productive (links to come). Here, I'll talk about the one I work on: <a href="https://filamenthdl.com">Filament</a>.</p>
+<p>Before we get there, though, we'll work through a small example in Verilog that will highlight the specific problem that
+we want to solve with Filament.</p>
+<h2 id="an-example">An example</h2>
+<p>Let's start small -- we'll design a simple ALU that can support multiplication and addition. I'll be writing my code snippets in
+Verilog, and I'll explain each step so even if you've never seen an HDL before, you can still follow what we're doing.</p>
+<p>Here's what our signature will look like. If anyone else wants to use our ALU in their design, this is what they'll see.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>module alu
+</span><span>(
+</span><span>    input  logic [31:0] in0,
+</span><span>    input  logic [31:0] in1,
+</span><span>    input  logic        opsel,
+</span><span>    output logic [31:0] out
+</span><span>);
+</span></code></pre>
+<p>Our signature is straightforward: we have 32-bit operands and have a 1-bit control signal to select between multiplication and
+addition. Let's move on to the first part of the component's body.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] add_result;
+</span><span>    assign add_result = in0 + in1;
+</span></code></pre>
+<p>We can use Verilog's <code>+</code> operator and it'll synthesize just fine. Let's move on to multiplication.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] mult_result;
+</span><span>    assign mult_result = in0 * in1;
+</span></code></pre>
+<p>This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the <code>*</code> operator.
+Luckily, we have access to someone else's multiplier implementation; let's instantiate that instead.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] mult_result;
+</span><span>    
+</span><span>    imul multiplier
+</span><span>    (
+</span><span>        .clk   ()
+</span><span>        .reset ()
+</span><span>        .in0   ()
+</span><span>        .in1   ()
+</span><span>        .out   ()
+</span><span>    );
+</span></code></pre>
+<p>Here, <code>imul</code> is the module name and <code>multiplier</code> is the named instantiation of it inside our circuit. It looks like we'll need
+<code>clk</code> and <code>reset</code> signals for it; let's add those to our module signature.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>module alu
+</span><span>(
+</span><span>    input logic         clk,
+</span><span>    input logic         reset,
+</span><span>
+</span><span>    input  logic [31:0] in0,
+</span><span>    input  logic [31:0] in1,
+</span><span>    input  logic        opsel,
+</span><span>    output logic [31:0] out
+</span><span>);
+</span></code></pre>
+<p>Now, we can make the port connections for our instantiation.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] mult_result;
+</span><span>    
+</span><span>    imul multiplier
+</span><span>    (
+</span><span>        .clk   (clk)
+</span><span>        .reset (reset)
+</span><span>        .in0   (in0)
+</span><span>        .in1   (in1)
+</span><span>        .out   (mult_result)
+</span><span>    );
+</span></code></pre>
+<p>One more step: we need to drive the output of our ALU. We'll do that with a mux to choose between the add and
+multiply outputs.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    assign out = opsel ? add_result : mult_result;
+</span></code></pre>
+<p>This will assign <code>out</code> to <code>add_result</code> when <code>opsel</code> is 0 and <code>mult_result</code> when it is 1.</p>
+<p>Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
+curious you can view the code <a href="https://github.com/gabizon103/intro-filament">here</a>.</p>
+<p>I made a file <code>alu_tb.v</code> which can be used to simulate our design with <code>iverilog</code>:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>% iverilog -Wall -g2012 -o alu_tb alu_tb.v
+</span></code></pre>
+<p>I included print statements in the test bench, so we can inspect the output:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>% ./alu_tb
+</span><span>
+</span><span>cycle 0: in0 = 00000002, in1 = 00000004, opsel = 1
+</span><span>cycle 0: out = 00000006
+</span><span>cycle 1: in0 = 00000002, in1 = 00000004, opsel = 0
+</span><span>cycle 1: out = 00000000
+</span></code></pre>
+<p>We start out by testing our ALU's add functionality, and 2 + 4 does indeed equal 6! We test multiplication on the next
+cycle, but something is off. Instead of getting 8 like we expect, we get 0. This is weird, so let's dig into the
+waveform that we generated from our test bench.</p>
+<!-- <div >
+  <img src="content&#x2F;blog&#x2F;filament1&#x2F;img.png" >
+  
+</div> -->
+<p><img src="https://gabizon103.github.io/drafts/intro-filament/image.png" alt="alt text" /></p>
+<p>At cycle 0, we see that <code>opsel</code> is 1, meaning we are computing the addition. In that same cycle, <code>out</code> is 6. This makes sense, because addition is combinational. In the next cycle,
+we set <code>opsel</code> to 0. However, <code>out</code> doesn't become 8 until cycle 3.</p>
+<p>Aha! This is an important clue. Implicit in our ALU design was our assumption that the multiplier would return its output
+in the same cycle we sent its inputs. The waveform tells us this can't be true, but let's look at the code for the multiplier
+to confirm:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] mult_s1;
+</span><span>    logic [31:0] mult_s2;
+</span><span>    logic [31:0] mult_s3;
+</span><span>    logic [31:0] mult_s4;
+</span><span>
+</span><span>    always_ff @(posedge clk) begin
+</span><span>        if (reset) begin
+</span><span>            mult_s1 &lt;= 32&#39;d0;
+</span><span>            mult_s2 &lt;= 32&#39;d0;
+</span><span>            mult_s3 &lt;= 32&#39;d0;
+</span><span>        end else begin
+</span><span>            mult_s1 &lt;= in0 * in1;
+</span><span>            mult_s2 &lt;= mult_s1;
+</span><span>            mult_s3 &lt;= mult_s2;
+</span><span>            mult_s4 &lt;= mult_s3;
+</span><span>        end
+</span><span>    end
+</span><span>
+</span><span>    assign out = mult_s4;
+</span></code></pre>
+<p>Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
+using <code>*</code>. <code>mult_s1</code>, <code>mult_s2</code>, <code>mult_s3</code>, and <code>mult_s4</code> each represent the pipeline registers we use to store the result of each stage.
+the <code>always_ff</code> block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
+set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.</p>
+<p>The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
+at the same time. Let's go back and fix that:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    logic [31:0] add_s1;
+</span><span>    logic [31:0] add_s2;
+</span><span>    logic [31:0] add_s3;
+</span><span>    logic [31:0] add_result;
+</span><span>
+</span><span>    always_ff @(posedge clk) begin
+</span><span>        if (reset) begin
+</span><span>            add_s1 &lt;= 0;
+</span><span>            add_s2 &lt;= 0;
+</span><span>            add_s3 &lt;= 0;
+</span><span>            add_result &lt;= 0;
+</span><span>        end else begin
+</span><span>            add_s1 &lt;= in0 + in1;
+</span><span>            add_s2 &lt;= add_s1;
+</span><span>            add_s3 &lt;= add_s2;
+</span><span>            add_result &lt;= add_s3;
+</span><span>        end
+</span><span>    end
+</span></code></pre>
+<p>This block of code computes the addition and then saves the result until the multiplication is finished. Let's try testing
+again.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>./alu_tb
+</span><span>cycle 0: in0 = 00000002, in1 = 00000004, opsel = 1
+</span><span>cycle 0: out = xxxxxxxx
+</span><span>cycle 1: in0 = 00000002, in1 = 00000004, opsel = 1
+</span><span>cycle 1: out = xxxxxxxx
+</span><span>cycle 2: in0 = 00000002, in1 = 00000004, opsel = 1
+</span><span>cycle 2: out = xxxxxxxx
+</span><span>cycle 3: in0 = 00000002, in1 = 00000004, opsel = 1
+</span><span>cycle 3: out = 00000006
+</span><span>cycle 4: reset = 1
+</span><span>cycle 5: in0 = 00000002, in1 = 00000004, opsel = 0
+</span><span>cycle 5: out = 00000000
+</span><span>cycle 6: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+</span><span>cycle 6: out = 00000000
+</span><span>cycle 7: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+</span><span>cycle 7: out = 00000000
+</span><span>cycle 8: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+</span><span>cycle 8: out = 00000008
+</span><span>alu_tb.v:70: $finish called at 101 (1s)
+</span></code></pre>
+<p>On cycle 0, we send the ALU our addition. It doesn't finish until cycle 3, where we see the correct output. On cycle 5,
+we send the ALU our multiplication. It doesn't finish until cycle 8, where we see the correct output. If you look closely
+at the above trace, you'll see that when we send the multiplication, we don't have to assert <code>in0</code> and <code>in1</code> for all 4 cycles;
+looking at our implementation, you'll notice that's because we only read from <code>in0</code> and <code>in1</code> in cycle 0. You'll notice something
+similar for <code>opsel</code>; we only read from it in the very last cycle of our computation.</p>
+<p>Now, that was a lot of information about our circuit. Information which is critical to our circuit functioning properly,
+especially if it is interacting with other circuits. And, as you definitely noticed, none of it was explicit in our Verilog
+code. We had to carefully extract all of it and try real hard not to forget any of it. What if there was a better way?</p>
+<h2 id="the-better-way">The better way</h2>
+<p>Now, we can finally understand where Filament comes in. This is what our ALU's signature would look like in Filament:</p>
+<p>{{
+code(body=<code>comp ALU&lt;'G:1&gt;(     go: interface['G],     in0: ['G, 'G+1] 32,     in1: ['G, 'G+1] 32,     opsel: ['G+3, 'G+4] 1 ) -&gt; (     out: ['G+3, 'G+4] 32 )</code>)
+}}</p>
+<!-- ```
+comp ALU<'G:1>(
+    go: interface['G],
+    in0: ['G, 'G+1] 32,
+    in1: ['G, 'G+1] 32,
+    opsel: ['G+3, 'G+4] 1
+) -> (
+    out: ['G+3, 'G+4] 32
+)
+``` -->
+<p>This is necessarily more verbose than a Verilog signature. Let's break it down. <code>comp ALU</code> means this is a component named ALU;
+simple enough. <code>&lt;'G:1&gt;</code> means that there is an event <code>'G</code> associated with this component that has a delay of 1; more on that later.
+<code>go: interface['G]</code> means we can think of the event <code>'G</code> as signaling the "start" of the computation. Filament's events correspond
+directly to clock cycles, so <code>'G</code> is really a clock cycle. Everything else inside of <code>ALU</code> happens in relation to <code>'G</code>.</p>
+<p><code>in0: ['G, 'G+1] 32</code> means <code>in0</code> is a port of width 32, and it has the <em>availability interval</em> of <code>['G, 'G+1]</code>. This idea corresponds
+directly to the observation we just made about our ALU only reading from <code>in0</code> and <code>in1</code> in the first cycle of its computation. We've
+encoded this directly into the language, and soon we'll see the cool things we can do with that. Similar observations can be made about
+<code>in1</code>, <code>opsel</code>, and <code>out</code>.</p>
+<p>Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
+library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>comp Add[IN_WIDTH, ?OUT_WIDTH=IN_WIDTH]&lt;&#39;G: &#39;L-(&#39;G), ?&#39;L: 1=&#39;G+1&gt;(
+</span><span>      left: [&#39;G, &#39;L] IN_WIDTH,
+</span><span>      right: [&#39;G, &#39;L] IN_WIDTH,
+</span><span>   ) -&gt; (
+</span><span>      out: [&#39;G, &#39;L] OUT_WIDTH
+</span><span>   ) where &#39;L &gt; &#39;G, IN_WIDTH &lt;= OUT_WIDTH, IN_WIDTH &gt; 0, OUT_WIDTH &gt; 0;
+</span></code></pre>
+<p>We can tell this component is combinational because its outputs are produced in the same cycle that its
+inputs are provided.</p>
+<p>Here's the multiplier:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>comp FastMult[W]&lt;&#39;G: 1&gt;(
+</span><span>   left: [&#39;G, &#39;G+1] W,
+</span><span>   right: [&#39;G, &#39;G+1] W,
+</span><span>) -&gt; (
+</span><span>   out: [&#39;G+3, &#39;G+4] W,
+</span><span>) where W &gt; 0
+</span></code></pre>
+<p>Again, now we know the precise timing behavior of our multiplier. What happens if we make a mistake similar to the one we made in our
+Verilog implementation? We'll try it inside our Filament ALU.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add.out, mult.out);
+</span><span>    out = mux.out;
+</span></code></pre>
+<p>In the first three lines, we are creating an <strong>instance</strong> of a component and then <strong>invoking</strong> it at the specified time with
+the given inputs. In the case of the adder, we instantiate the <code>Add</code> component at time <code>'G</code> with inputs <code>in0</code> and <code>in1</code>. We bind
+this invocation to the name <code>add</code>, so we can refer to its output ports later, like when we pass it into the mux. When we try to
+compile this code, we get the following error:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>error: source port does not provide value for as long as destination requires
+</span><span>   ┌─ ../../proj/filament-blog1/alu.fil:14:37
+</span><span>   │
+</span><span>14 │     mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add.out, mult.out);
+</span><span>   │                                     ^^^^^^^
+</span><span>   │                                     │
+</span><span>   │                                     source is available for [&#39;G, &#39;G+1]
+</span><span>   │                                     required for [&#39;G+3, &#39;G+4]
+</span><span>
+</span><span>Compilation failed with 1 errors.
+</span></code></pre>
+<p>This error points out the exact problem we had to figure out ourselves earlier. The output of <code>add</code> is available at <code>'G</code>, but
+the mux is expecting its inputs at <code>'G+3</code> because we invoked it at <code>'G+3</code> to account for the multiplier's delay. Now that we know
+the problem, the fix is simple: extend the availability of <code>add.out</code> using a register.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    add_reg := new Register[32]&lt;&#39;G, &#39;G+4&gt;(add.out);
+</span><span>
+</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add_reg.out, mult.out);
+</span><span>    out = mux.out;
+</span></code></pre>
+<p>Now, we get a different error from the compiler.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>error: event provided to invocation triggers more often that invocation&#39;s event&#39;s delay allows
+</span><span>   ┌─ ../../proj/filament-blog1/alu.fil:14:33
+</span><span>   │
+</span><span> 5 │ comp ALU&lt;&#39;G:1&gt;(
+</span><span>   │             - this event triggers every 1 cycles
+</span><span>   ·
+</span><span>14 │     add_reg := new Register[32]&lt;&#39;G, &#39;G+4&gt;(add.out);
+</span><span>   │                                 ^^ event provided to invoke triggers too often
+</span><span>   │
+</span><span>   ┌─ ./primitives/state.fil:6:29
+</span><span>   │
+</span><span> 6 │    comp Register[WIDTH]&lt;&#39;G: &#39;L-(&#39;G+1), &#39;L: 1&gt;(
+</span><span>   │                             --------- invocation&#39;s event is allowed to trigger every 3 cycles
+</span><span>
+</span><span>Compilation failed with 1 errors.
+</span></code></pre>
+<p>This error has to do with the <strong>delay</strong> of our ALU, which is associated with the ALU's event <code>'G</code>. In our signature, we specified
+that <code>'G</code> has a delay of 1, which means that ALU can process a new input every cycle. If we look more closely at the error, we
+see that it is telling us that because we use the register over the interval <code>'G, G+4</code>, we can't possibly handle new inputs. It is most
+clear with an example: if we get a set of inputs at cycle 0, that computation will be using the register over cycles 0 to 4. If we then
+get a set of inputs at cycle 1, that computation will need to use the register over cycles 1 to 5. This overlap causes a problem, since
+we only have a single physical register. There are actually two fixes: we can either alter our signature to reflect this constraint by
+changing the delay of <code>'G</code> to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    r0 := new Register[32]&lt;&#39;G, &#39;G+2&gt;(add.out);
+</span><span>    r1 := new Register[32]&lt;&#39;G+1, &#39;G+3&gt;(r0.out);
+</span><span>    r2 := new Register[32]&lt;&#39;G+2, &#39;G+4&gt;(r1.out);
+</span><span>
+</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
+</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, r2.out, mult.out);
+</span><span>    out = mux.out;
+</span></code></pre>
+<p>We add a chain of registers, which achieves our desired throughput. Now, there won't be resource contention between two successive
+inputs. Now, our program type checks. Let's test it.</p>
+<p>We specify our inputs to the Filament design with a JSON:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>{
+</span><span>    &quot;opsel&quot;: [1, 0, 1, 0],
+</span><span>    &quot;in0&quot;:   [3, 4, 5, 6],
+</span><span>    &quot;in1&quot;:   [8, 9, 2, 3]
+</span><span>}
+</span></code></pre>
+<p>This means we drive <code>opsel</code> with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>{&quot;out&quot;: {&quot;0&quot;: [11], &quot;1&quot;: [36], &quot;2&quot;: [7], &quot;3&quot;: [18]}, &quot;cycles&quot;: 7}
+</span></code></pre>
+<p>Success!</p>
+<p>With Filament, we were able to express the fundamental constraints on our circuit through language-level constructs. This allowed
+the compiler to automate much of the reasoning that we had to do ourself when we were using Verilog. One important limitation
+of Filament is that it can only express statically-scheduled circuits, which are circuits whose timing behavior is input-independent.
+In our example, our multiplier always took 4 cycles. However, you can imagine a multiplier that, for example, uses a left shift to
+compute its output if it detects that one of its operands is a power of two, for example. This is a dynamic circuit, which cannot
+currently be expressed in Filament.</p>
+<p>Still, this post has only scratched the surface of what is possible in Filament. We'll get into the rest of it in future posts.</p>
+
+
+<p class="tags-data">
+
+</p>
+
+      </main>
+      <footer>
+          <hr>
+<div id="footer-container">
+  
+  <div>
+    <p>Theme and color theme licensed under <a target="_blank" rel="noopener noreferrer" href="https://en.wikipedia.org/wiki/Licence_MIT">MIT</a>.<br>
+      Built with <a target="_blank" rel="noopener noreferrer" href="https://www.getzola.org">Zola</a> using <a target="_blank" rel="noopener noreferrer" href="https://github.com/Speyll/anemone">anemone</a> theme, <a target="_blank" rel="noopener noreferrer" href="https://speyll.github.io/suCSS/">suCSS</a> framework &amp; <a target="_blank" rel="noopener noreferrer" href="https://github.com/Speyll/veqev">veqev</a>.<br>
+    </p>
+
+  </div>
+  
+</div>
+
+      </footer>
+</body>
+</html>
