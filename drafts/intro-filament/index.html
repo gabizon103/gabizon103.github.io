@@ -54,8 +54,12 @@
 <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/style.css"/>
 
 <script src="https://gabizon103.github.io/js/script.js" defer></script>
+    <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/prism.css">
+    <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/prism-futil.css">
 </head>
 <body>
+    <script src=https://gabizon103.github.io/js/prism.js></script>
+    <script src=https://gabizon103.github.io/js/prism-futil.js></script>
       <header>
           
 
@@ -244,15 +248,16 @@ especially if it is interacting with other circuits. And, as you definitely noti
 code. We had to carefully extract all of it and try real hard not to forget any of it. What if there was a better way?</p>
 <h2 id="the-better-way">The better way</h2>
 <p>Now, we can finally understand where Filament comes in. This is what our ALU's signature would look like in Filament:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>comp ALU&lt;&#39;G:1&gt;(
-</span><span>    go: interface[&#39;G],
-</span><span>    in0: [&#39;G, &#39;G+1] 32,
-</span><span>    in1: [&#39;G, &#39;G+1] 32,
-</span><span>    opsel: [&#39;G+3, &#39;G+4] 1
-</span><span>) -&gt; (
-</span><span>    out: [&#39;G+3, &#39;G+4] 32
-</span><span>)
-</span></code></pre>
+<div class="code language-filament">
+    <pre><code>comp ALU&lt;&#x27;G:1&gt;(
+    go: interface[&#x27;G],
+    in0: [&#x27;G, &#x27;G+1] 32,
+    in1: [&#x27;G, &#x27;G+1] 32,
+    opsel: [&#x27;G+3, &#x27;G+4] 1
+) -&gt; (
+    out: [&#x27;G+3, &#x27;G+4] 32
+)<br> </code></pre>
+</div>
 <p>This is necessarily more verbose than a Verilog signature. Let's break it down. <code>comp ALU</code> means this is a component named ALU;
 simple enough. <code>&lt;'G:1&gt;</code> means that there is an event <code>'G</code> associated with this component that has a delay of 1; more on that later.
 <code>go: interface['G]</code> means we can think of the event <code>'G</code> as signaling the "start" of the computation. Filament's events correspond
@@ -263,101 +268,110 @@ encoded this directly into the language, and soon we'll see the cool things we c
 <code>in1</code>, <code>opsel</code>, and <code>out</code>.</p>
 <p>Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
 library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>comp Add[IN_WIDTH, ?OUT_WIDTH=IN_WIDTH]&lt;&#39;G: &#39;L-(&#39;G), ?&#39;L: 1=&#39;G+1&gt;(
-</span><span>      left: [&#39;G, &#39;L] IN_WIDTH,
-</span><span>      right: [&#39;G, &#39;L] IN_WIDTH,
-</span><span>   ) -&gt; (
-</span><span>      out: [&#39;G, &#39;L] OUT_WIDTH
-</span><span>   ) where &#39;L &gt; &#39;G, IN_WIDTH &lt;= OUT_WIDTH, IN_WIDTH &gt; 0, OUT_WIDTH &gt; 0;
-</span></code></pre>
+<div class="code language-filament">
+    <pre><code>comp Add[IN_WIDTH, ?OUT_WIDTH=IN_WIDTH]&lt;&#x27;G: &#x27;L-(&#x27;G), ?&#x27;L: 1=&#x27;G+1&gt;(
+      left: [&#x27;G, &#x27;L] IN_WIDTH,
+      right: [&#x27;G, &#x27;L] IN_WIDTH,
+   ) -&gt; (
+      out: [&#x27;G, &#x27;L] OUT_WIDTH
+   ) where &#x27;L &gt; &#x27;G, IN_WIDTH &lt;= OUT_WIDTH, IN_WIDTH &gt; 0, OUT_WIDTH &gt; 0;<br> </code></pre>
+</div>
 <p>We can tell this component is combinational because its outputs are produced in the same cycle that its
 inputs are provided.</p>
-<p>Here's the multiplier:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>comp FastMult[W]&lt;&#39;G: 1&gt;(
-</span><span>   left: [&#39;G, &#39;G+1] W,
-</span><span>   right: [&#39;G, &#39;G+1] W,
-</span><span>) -&gt; (
-</span><span>   out: [&#39;G+3, &#39;G+4] W,
-</span><span>) where W &gt; 0
-</span></code></pre>
+<p>Here's the multiplier:
+<div class="code language-filament">
+    <pre><code>comp FastMult[W]&lt;&#x27;G: 1&gt;(
+   left: [&#x27;G, &#x27;G+1] W,
+   right: [&#x27;G, &#x27;G+1] W,
+) -&gt; (
+   out: [&#x27;G+3, &#x27;G+4] W,
+) where W &gt; 0<br> </code></pre>
+</div></p>
 <p>Again, now we know the precise timing behavior of our multiplier. What happens if we make a mistake similar to the one we made in our
-Verilog implementation? We'll try it inside our Filament ALU.</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add.out, mult.out);
-</span><span>    out = mux.out;
-</span></code></pre>
+Verilog implementation? We'll try it inside our Filament ALU.
+<div class="code language-filament">
+    <pre><code>add := new Add[32]&lt;&#x27;G&gt;(in0, in1);
+    mult := new FastMult[32]&lt;&#x27;G&gt;(in0, in1);
+    mux := new Mux[32]&lt;&#x27;G+3&gt;(opsel, add.out, mult.out);
+    out = mux.out;<br> </code></pre>
+</div></p>
 <p>In the first three lines, we are creating an <strong>instance</strong> of a component and then <strong>invoking</strong> it at the specified time with
 the given inputs. In the case of the adder, we instantiate the <code>Add</code> component at time <code>'G</code> with inputs <code>in0</code> and <code>in1</code>. We bind
 this invocation to the name <code>add</code>, so we can refer to its output ports later, like when we pass it into the mux. When we try to
 compile this code, we get the following error:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>error: source port does not provide value for as long as destination requires
-</span><span>   ┌─ ../../proj/filament-blog1/alu.fil:14:37
-</span><span>   │
-</span><span>14 │     mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add.out, mult.out);
-</span><span>   │                                     ^^^^^^^
-</span><span>   │                                     │
-</span><span>   │                                     source is available for [&#39;G, &#39;G+1]
-</span><span>   │                                     required for [&#39;G+3, &#39;G+4]
-</span><span>
-</span><span>Compilation failed with 1 errors.
-</span></code></pre>
-<p>This error points out the exact problem we had to figure out ourselves earlier. The output of <code>add</code> is available at <code>'G</code>, but
+<p><div class="code language-filament">
+    <pre><code>error: source port does not provide value for as long as destination requires
+   ┌─ ..&#x2F;..&#x2F;proj&#x2F;filament-blog1&#x2F;alu.fil:14:37
+   │
+14 │     mux := new Mux[32]&lt;&#x27;G+3&gt;(opsel, add.out, mult.out);
+   │                                     ^^^^^^^
+   │                                     │
+   │                                     source is available for [&#x27;G, &#x27;G+1]
+   │                                     required for [&#x27;G+3, &#x27;G+4]
+
+Compilation failed with 1 errors.<br> </code></pre>
+</div>
+This error points out the exact problem we had to figure out ourselves earlier. The output of <code>add</code> is available at <code>'G</code>, but
 the mux is expecting its inputs at <code>'G+3</code> because we invoked it at <code>'G+3</code> to account for the multiplier's delay. Now that we know
-the problem, the fix is simple: extend the availability of <code>add.out</code> using a register.</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    add_reg := new Register[32]&lt;&#39;G, &#39;G+4&gt;(add.out);
-</span><span>
-</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, add_reg.out, mult.out);
-</span><span>    out = mux.out;
-</span></code></pre>
-<p>Now, we get a different error from the compiler.</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>error: event provided to invocation triggers more often that invocation&#39;s event&#39;s delay allows
-</span><span>   ┌─ ../../proj/filament-blog1/alu.fil:14:33
-</span><span>   │
-</span><span> 5 │ comp ALU&lt;&#39;G:1&gt;(
-</span><span>   │             - this event triggers every 1 cycles
-</span><span>   ·
-</span><span>14 │     add_reg := new Register[32]&lt;&#39;G, &#39;G+4&gt;(add.out);
-</span><span>   │                                 ^^ event provided to invoke triggers too often
-</span><span>   │
-</span><span>   ┌─ ./primitives/state.fil:6:29
-</span><span>   │
-</span><span> 6 │    comp Register[WIDTH]&lt;&#39;G: &#39;L-(&#39;G+1), &#39;L: 1&gt;(
-</span><span>   │                             --------- invocation&#39;s event is allowed to trigger every 3 cycles
-</span><span>
-</span><span>Compilation failed with 1 errors.
-</span></code></pre>
-<p>This error has to do with the <strong>delay</strong> of our ALU, which is associated with the ALU's event <code>'G</code>. In our signature, we specified
+the problem, the fix is simple: extend the availability of <code>add.out</code> using a register.
+<div class="code language-filament">
+    <pre><code>add := new Add[32]&lt;&#x27;G&gt;(in0, in1);
+    add_reg := new Register[32]&lt;&#x27;G, &#x27;G+4&gt;(add.out);
+
+    mult := new FastMult[32]&lt;&#x27;G&gt;(in0, in1);
+    mux := new Mux[32]&lt;&#x27;G+3&gt;(opsel, add_reg.out, mult.out);
+    out = mux.out;<br> </code></pre>
+</div></p>
+<p>Now, we get a different error from the compiler.
+<div class="code language-filament">
+    <pre><code>error: event provided to invocation triggers more often that invocation&#x27;s event&#x27;s delay allows
+   ┌─ ..&#x2F;..&#x2F;proj&#x2F;filament-blog1&#x2F;alu.fil:14:33
+   │
+ 5 │ comp ALU&lt;&#x27;G:1&gt;(
+   │             - this event triggers every 1 cycles
+   ·
+14 │     add_reg := new Register[32]&lt;&#x27;G, &#x27;G+4&gt;(add.out);
+   │                                 ^^ event provided to invoke triggers too often
+   │
+   ┌─ .&#x2F;primitives&#x2F;state.fil:6:29
+   │
+ 6 │    comp Register[WIDTH]&lt;&#x27;G: &#x27;L-(&#x27;G+1), &#x27;L: 1&gt;(
+   │                             --------- invocation&#x27;s event is allowed to trigger every 3 cycles
+
+Compilation failed with 1 errors.<br> </code></pre>
+</div>
+This error has to do with the <strong>delay</strong> of our ALU, which is associated with the ALU's event <code>'G</code>. In our signature, we specified
 that <code>'G</code> has a delay of 1, which means that ALU can process a new input every cycle. If we look more closely at the error, we
 see that it is telling us that because we use the register over the interval <code>'G, G+4</code>, we can't possibly handle new inputs. It is most
 clear with an example: if we get a set of inputs at cycle 0, that computation will be using the register over cycles 0 to 4. If we then
 get a set of inputs at cycle 1, that computation will need to use the register over cycles 1 to 5. This overlap causes a problem, since
 we only have a single physical register. There are actually two fixes: we can either alter our signature to reflect this constraint by
-changing the delay of <code>'G</code> to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>    add := new Add[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    r0 := new Register[32]&lt;&#39;G, &#39;G+2&gt;(add.out);
-</span><span>    r1 := new Register[32]&lt;&#39;G+1, &#39;G+3&gt;(r0.out);
-</span><span>    r2 := new Register[32]&lt;&#39;G+2, &#39;G+4&gt;(r1.out);
-</span><span>
-</span><span>    mult := new FastMult[32]&lt;&#39;G&gt;(in0, in1);
-</span><span>    mux := new Mux[32]&lt;&#39;G+3&gt;(opsel, r2.out, mult.out);
-</span><span>    out = mux.out;
-</span></code></pre>
-<p>We add a chain of registers, which achieves our desired throughput. Now, there won't be resource contention between two successive
+changing the delay of <code>'G</code> to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:
+<div class="code language-filament">
+    <pre><code>add := new Add[32]&lt;&#x27;G&gt;(in0, in1);
+    r0 := new Register[32]&lt;&#x27;G, &#x27;G+2&gt;(add.out);
+    r1 := new Register[32]&lt;&#x27;G+1, &#x27;G+3&gt;(r0.out);
+    r2 := new Register[32]&lt;&#x27;G+2, &#x27;G+4&gt;(r1.out);
+
+    mult := new FastMult[32]&lt;&#x27;G&gt;(in0, in1);
+    mux := new Mux[32]&lt;&#x27;G+3&gt;(opsel, r2.out, mult.out);
+    out = mux.out;<br> </code></pre>
+</div>
+We add a chain of registers, which achieves our desired throughput. Now, there won't be resource contention between two successive
 inputs. Now, our program type checks. Let's test it.</p>
-<p>We specify our inputs to the Filament design with a JSON:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>{
-</span><span>    &quot;opsel&quot;: [1, 0, 1, 0],
-</span><span>    &quot;in0&quot;:   [3, 4, 5, 6],
-</span><span>    &quot;in1&quot;:   [8, 9, 2, 3]
-</span><span>}
-</span></code></pre>
-<p>This means we drive <code>opsel</code> with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:</p>
-<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>{&quot;out&quot;: {&quot;0&quot;: [11], &quot;1&quot;: [36], &quot;2&quot;: [7], &quot;3&quot;: [18]}, &quot;cycles&quot;: 7}
-</span></code></pre>
-<p>Success!</p>
+<p>We specify our inputs to the Filament design with a JSON:
+<div class="code language-filament">
+    <pre><code>{
+    &quot;opsel&quot;: [1, 0, 1, 0],
+    &quot;in0&quot;:   [3, 4, 5, 6],
+    &quot;in1&quot;:   [8, 9, 2, 3]
+}<br> </code></pre>
+</div>
+This means we drive <code>opsel</code> with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:
+<div class="code language-filament">
+    <pre><code>{&quot;out&quot;: {&quot;0&quot;: [11], &quot;1&quot;: [36], &quot;2&quot;: [7], &quot;3&quot;: [18]}, &quot;cycles&quot;: 7}<br> </code></pre>
+</div>
+Success!</p>
 <p>With Filament, we were able to express the fundamental constraints on our circuit through language-level constructs. This allowed
 the compiler to automate much of the reasoning that we had to do ourself when we were using Verilog. One important limitation
 of Filament is that it can only express statically-scheduled circuits, which are circuits whose timing behavior is input-independent.
