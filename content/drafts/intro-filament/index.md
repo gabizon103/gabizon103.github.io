@@ -35,14 +35,14 @@ addition. Let's move on to the first part of the component's body.
     assign add_result = in0 + in1;
 {% end %}
 
-We can use Verilog's `+` operator and it'll synthesize just fine. Let's move on to multiplication.
+We can use Verilog's {{ inlinecode(id="verilog", body="+") }} operator and it'll synthesize just fine. Let's move on to multiplication.
 
 {% code(id="verilog") %}
     logic [31:0] mult_result;
     assign mult_result = in0 * in1;
 {% end %}
 
-This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the `*` operator.
+This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the {{ inlinecode(id="verilog", body="*") }} operator.
 Luckily, we have access to someone else's multiplier implementation; let's instantiate that instead.
 
 {% code(id="verilog") %}
@@ -58,8 +58,8 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
     );
 {% end %}
 
-Here, `imul` is the module name and `multiplier` is the named instantiation of it inside our circuit. It looks like we'll need
-`clk` and `reset` signals for it; let's add those to our module signature.
+Here, {{ inlinecode(id="verilog", body="imul") }} is the module name and {{ inlinecode(id="verilog", body="multiplier") }} is the named instantiation of it inside our circuit. It looks like we'll need
+{{ inlinecode(id="verilog", body="clk") }} and {{ inlinecode(id="verilog", body="reset") }} signals for it; let's add those to our module signature.
 
 {% code(id="verilog") %}
 module alu
@@ -95,12 +95,12 @@ multiply outputs.
 {% code(id="verilog") %}
     assign out = opsel ? add_result : mult_result;
 {% end %}
-This will assign `out` to `add_result` when `opsel` is 0 and `mult_result` when it is 1. 
+This will assign {{ inlinecode(id="verilog", body="out") }} to {{ inlinecode(id="verilog", body="add_result") }} when {{ inlinecode(id="verilog", body="opsel") }} is 0 and {{ inlinecode(id="verilog", body="mult_result") }} when it is 1. 
 
 Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
 curious you can view the code [here](https://github.com/gabizon103/intro-filament).
 
-I made a file `alu_tb.v` which can be used to simulate our design with `iverilog`:
+I made a file {{ inlinecode(id="verilog", body="alu_tb.v") }} which can be used to simulate our design with {{ inlinecode(id="verilog", body="iverilog") }}:
 
 ```
 % iverilog -Wall -g2012 -o alu_tb alu_tb.v
@@ -123,8 +123,8 @@ waveform that we generated from our test bench.
 <!-- {{ img(id="content/blog/filament1/img.png") }} -->
 ![alt text](image.png)
 
-At cycle 0, we see that `opsel` is 1, meaning we are computing the addition. In that same cycle, `out` is 6. This makes sense, because addition is combinational. In the next cycle,
-we set `opsel` to 0. However, `out` doesn't become 8 until cycle 3.
+At cycle 0, we see that {{ inlinecode(id="verilog", body="opsel") }} is 1, meaning we are computing the addition. In that same cycle, {{ inlinecode(id="verilog", body="out") }} is 6. This makes sense, because addition is combinational. In the next cycle,
+we set {{ inlinecode(id="verilog", body="opsel") }} to 0. However, {{ inlinecode(id="verilog", body="out") }} doesn't become 8 until cycle 3.
 
 Aha! This is an important clue. Implicit in our ALU design was our assumption that the multiplier would return its output
 in the same cycle we sent its inputs. The waveform tells us this can't be true, but let's look at the code for the multiplier
@@ -153,15 +153,14 @@ to confirm:
 {% end %}
 
 Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
-using `*`. `mult_s1`, `mult_s2`, `mult_s3`, and `mult_s4` each represent the pipeline registers we use to store the result of each stage.
-the `always_ff` block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
+using {{ inlinecode(id="verilog", body="*") }}. {{ inlinecode(id="verilog", body="mult_s1") }}, {{ inlinecode(id="verilog", body="mult_s2") }}, {{ inlinecode(id="verilog", body="mult_s3") }}, and {{ inlinecode(id="verilog", body="mult_s4") }} each represent the pipeline registers we use to store the result of each stage.
+The {{ inlinecode(id="verilog", body="always_ff") }} block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
 set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.
 
 The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
 at the same time. Let's go back and fix that:
 
-{% code(id="verilog") %}
-    logic [31:0] add_s1;
+{% code(id="verilog") %} logic [31:0] add_s1;
     logic [31:0] add_s2;
     logic [31:0] add_s3;
     logic [31:0] add_result;
@@ -207,9 +206,9 @@ alu_tb.v:70: $finish called at 101 (1s)
 
 On cycle 0, we send the ALU our addition. It doesn't finish until cycle 3, where we see the correct output. On cycle 5,
 we send the ALU our multiplication. It doesn't finish until cycle 8, where we see the correct output. If you look closely
-at the above trace, you'll see that when we send the multiplication, we don't have to assert `in0` and `in1` for all 4 cycles;
-looking at our implementation, you'll notice that's because we only read from `in0` and `in1` in cycle 0. You'll notice something
-similar for `opsel`; we only read from it in the very last cycle of our computation.
+at the above trace, you'll see that when we send the multiplication, we don't have to assert {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }} for all 4 cycles;
+looking at our implementation, you'll notice that's because we only read from {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }} in cycle 0. You'll notice something
+similar for {{ inlinecode(id="verilog", body="opsel") }}; we only read from it in the very last cycle of our computation.
 
 Now, that was a lot of information about our circuit. Information which is critical to our circuit functioning properly,
 especially if it is interacting with other circuits. And, as you definitely noticed, none of it was explicit in our Verilog
@@ -228,15 +227,15 @@ comp ALU<'G:1>(
     out: ['G+3, 'G+4] 32
 ) {% end %}
 
-This is necessarily more verbose than a Verilog signature. Let's break it down. `comp ALU` means this is a component named ALU;
-simple enough. `<'G:1>` means that there is an event `'G` associated with this component that has a delay of 1; more on that later.
-`go: interface['G]` means we can think of the event `'G` as signaling the "start" of the computation. Filament's events correspond
-directly to clock cycles, so `'G` is really a clock cycle. Everything else inside of `ALU` happens in relation to `'G`. 
+This is necessarily more verbose than a Verilog signature. Let's break it down. {{ inlinecode(id="filament", body="comp ALU") }} means this is a component named ALU;
+simple enough. {{ inlinecode(id="filament", body="<'G:1>") }} means that there is an event {{ inlinecode(id="filament", body="'G") }} associated with this component that has a delay of 1; more on that later.
+{{ inlinecode(id="filament", body="go: interface['G]") }} means we can think of the event {{ inlinecode(id="filament", body="'G") }} as signaling the "start" of the computation. Filament's events correspond
+directly to clock cycles, so {{ inlinecode(id="filament", body="'G") }} is really a clock cycle. Everything else inside of {{ inlinecode(id="filament", body="ALU") }}  happens in relation to {{ inlinecode(id="filament", body="'G") }} . 
 
-`in0: ['G, 'G+1] 32` means `in0` is a port of width 32, and it has the *availability interval* of `['G, 'G+1]`. This idea corresponds
-directly to the observation we just made about our ALU only reading from `in0` and `in1` in the first cycle of its computation. We've
+{{ inlinecode(id="filament", body="in0: ['G, 'G+1] 32") }} means {{ inlinecode(id="verilog", body="in0") }} is a port of width 32, and it has the *availability interval* of {{ inlinecode(id="filament", body="['G, 'G+1]") }}. This idea corresponds
+directly to the observation we just made about our ALU only reading from {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }} in the first cycle of its computation. We've
 encoded this directly into the language, and soon we'll see the cool things we can do with that. Similar observations can be made about
-`in1`, `opsel`, and `out`.
+{{ inlinecode(id="verilog", body="in1") }}, {{ inlinecode(id="filament", body="opsel") }}, and {{ inlinecode(id="filament", body="out") }}.
 
 Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
 library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:
@@ -273,7 +272,7 @@ Verilog implementation? We'll try it inside our Filament ALU.
 {% end %}
 
 In the first three lines, we are creating an **instance** of a component and then **invoking** it at the specified time with
-the given inputs. In the case of the adder, we instantiate the `Add` component at time `'G` with inputs `in0` and `in1`. We bind
+the given inputs. In the case of the adder, we instantiate the `Add` component at time `'G` with inputs {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }}. We bind
 this invocation to the name `add`, so we can refer to its output ports later, like when we pass it into the mux. When we try to 
 compile this code, we get the following error:
 

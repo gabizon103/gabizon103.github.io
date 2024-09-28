@@ -57,6 +57,7 @@ pre[class*="language-"] {
     color: #00a4db;
 }
 
-.token.punctuation {
+.token.punctuation,
+.token.operator {
     color: #ebdbb2
 }
