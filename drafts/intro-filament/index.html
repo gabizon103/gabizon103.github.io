@@ -103,12 +103,12 @@ addition. Let's move on to the first part of the component's body.</p>
     <pre><code>logic [31:0] add_result;
     assign add_result = in0 + in1;<br> </code></pre>
 </div>
-<p>We can use Verilog's <code>+</code> operator and it'll synthesize just fine. Let's move on to multiplication.</p>
+<p>We can use Verilog's <code class="code language-verilog">+</code> operator and it'll synthesize just fine. Let's move on to multiplication.</p>
 <div class="code language-verilog">
     <pre><code>logic [31:0] mult_result;
     assign mult_result = in0 * in1;<br> </code></pre>
 </div>
-<p>This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the <code>*</code> operator.
+<p>This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the <code class="code language-verilog">*</code> operator.
 Luckily, we have access to someone else's multiplier implementation; let's instantiate that instead.</p>
 <div class="code language-verilog">
     <pre><code>logic [31:0] mult_result;
@@ -122,8 +122,8 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
         .out   ()
     );<br> </code></pre>
 </div>
-<p>Here, <code>imul</code> is the module name and <code>multiplier</code> is the named instantiation of it inside our circuit. It looks like we'll need
-<code>clk</code> and <code>reset</code> signals for it; let's add those to our module signature.</p>
+<p>Here, <code class="code language-verilog">imul</code> is the module name and <code class="code language-verilog">multiplier</code> is the named instantiation of it inside our circuit. It looks like we'll need
+<code class="code language-verilog">clk</code> and <code class="code language-verilog">reset</code> signals for it; let's add those to our module signature.</p>
 <div class="code language-verilog">
     <pre><code>module alu
 (
@@ -154,10 +154,10 @@ multiply outputs.</p>
 <p><div class="code language-verilog">
     <pre><code>assign out = opsel ? add_result : mult_result;<br> </code></pre>
 </div>
-This will assign <code>out</code> to <code>add_result</code> when <code>opsel</code> is 0 and <code>mult_result</code> when it is 1.</p>
+This will assign <code class="code language-verilog">out</code> to <code class="code language-verilog">add_result</code> when <code class="code language-verilog">opsel</code> is 0 and <code class="code language-verilog">mult_result</code> when it is 1.</p>
 <p>Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
 curious you can view the code <a href="https://github.com/gabizon103/intro-filament">here</a>.</p>
-<p>I made a file <code>alu_tb.v</code> which can be used to simulate our design with <code>iverilog</code>:</p>
+<p>I made a file <code class="code language-verilog">alu_tb.v</code> which can be used to simulate our design with <code class="code language-verilog">iverilog</code>:</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>% iverilog -Wall -g2012 -o alu_tb alu_tb.v
 </span></code></pre>
 <p>I included print statements in the test bench, so we can inspect the output:</p>
@@ -176,8 +176,8 @@ waveform that we generated from our test bench.</p>
   
 </div> -->
 <p><img src="https://gabizon103.github.io/drafts/intro-filament/image.png" alt="alt text" /></p>
-<p>At cycle 0, we see that <code>opsel</code> is 1, meaning we are computing the addition. In that same cycle, <code>out</code> is 6. This makes sense, because addition is combinational. In the next cycle,
-we set <code>opsel</code> to 0. However, <code>out</code> doesn't become 8 until cycle 3.</p>
+<p>At cycle 0, we see that <code class="code language-verilog">opsel</code> is 1, meaning we are computing the addition. In that same cycle, <code class="code language-verilog">out</code> is 6. This makes sense, because addition is combinational. In the next cycle,
+we set <code class="code language-verilog">opsel</code> to 0. However, <code class="code language-verilog">out</code> doesn't become 8 until cycle 3.</p>
 <p>Aha! This is an important clue. Implicit in our ALU design was our assumption that the multiplier would return its output
 in the same cycle we sent its inputs. The waveform tells us this can't be true, but let's look at the code for the multiplier
 to confirm:</p>
@@ -203,8 +203,8 @@ to confirm:</p>
     assign out = mult_s4;<br> </code></pre>
 </div>
 <p>Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
-using <code>*</code>. <code>mult_s1</code>, <code>mult_s2</code>, <code>mult_s3</code>, and <code>mult_s4</code> each represent the pipeline registers we use to store the result of each stage.
-the <code>always_ff</code> block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
+using <code class="code language-verilog">*</code>. <code class="code language-verilog">mult_s1</code>, <code class="code language-verilog">mult_s2</code>, <code class="code language-verilog">mult_s3</code>, and <code class="code language-verilog">mult_s4</code> each represent the pipeline registers we use to store the result of each stage.
+The <code class="code language-verilog">always_ff</code> block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
 set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.</p>
 <p>The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
 at the same time. Let's go back and fix that:</p>
@@ -252,9 +252,9 @@ again.</p>
 </span></code></pre>
 <p>On cycle 0, we send the ALU our addition. It doesn't finish until cycle 3, where we see the correct output. On cycle 5,
 we send the ALU our multiplication. It doesn't finish until cycle 8, where we see the correct output. If you look closely
-at the above trace, you'll see that when we send the multiplication, we don't have to assert <code>in0</code> and <code>in1</code> for all 4 cycles;
-looking at our implementation, you'll notice that's because we only read from <code>in0</code> and <code>in1</code> in cycle 0. You'll notice something
-similar for <code>opsel</code>; we only read from it in the very last cycle of our computation.</p>
+at the above trace, you'll see that when we send the multiplication, we don't have to assert <code class="code language-verilog">in0</code> and <code class="code language-verilog">in1</code> for all 4 cycles;
+looking at our implementation, you'll notice that's because we only read from <code class="code language-verilog">in0</code> and <code class="code language-verilog">in1</code> in cycle 0. You'll notice something
+similar for <code class="code language-verilog">opsel</code>; we only read from it in the very last cycle of our computation.</p>
 <p>Now, that was a lot of information about our circuit. Information which is critical to our circuit functioning properly,
 especially if it is interacting with other circuits. And, as you definitely noticed, none of it was explicit in our Verilog
 code. We had to carefully extract all of it and try real hard not to forget any of it. What if there was a better way?</p>
@@ -270,14 +270,14 @@ code. We had to carefully extract all of it and try real hard not to forget any 
     out: [&#x27;G+3, &#x27;G+4] 32
 )<br> </code></pre>
 </div>
-<p>This is necessarily more verbose than a Verilog signature. Let's break it down. <code>comp ALU</code> means this is a component named ALU;
-simple enough. <code>&lt;'G:1&gt;</code> means that there is an event <code>'G</code> associated with this component that has a delay of 1; more on that later.
-<code>go: interface['G]</code> means we can think of the event <code>'G</code> as signaling the "start" of the computation. Filament's events correspond
-directly to clock cycles, so <code>'G</code> is really a clock cycle. Everything else inside of <code>ALU</code> happens in relation to <code>'G</code>.</p>
-<p><code>in0: ['G, 'G+1] 32</code> means <code>in0</code> is a port of width 32, and it has the <em>availability interval</em> of <code>['G, 'G+1]</code>. This idea corresponds
-directly to the observation we just made about our ALU only reading from <code>in0</code> and <code>in1</code> in the first cycle of its computation. We've
+<p>This is necessarily more verbose than a Verilog signature. Let's break it down. <code class="code language-filament">comp ALU</code> means this is a component named ALU;
+simple enough. <code class="code language-filament">&lt;&#x27;G:1&gt;</code> means that there is an event <code class="code language-filament">&#x27;G</code> associated with this component that has a delay of 1; more on that later.
+<code class="code language-filament">go: interface[&#x27;G]</code> means we can think of the event <code class="code language-filament">&#x27;G</code> as signaling the "start" of the computation. Filament's events correspond
+directly to clock cycles, so <code class="code language-filament">&#x27;G</code> is really a clock cycle. Everything else inside of <code class="code language-filament">ALU</code>  happens in relation to <code class="code language-filament">&#x27;G</code> .</p>
+<p><code class="code language-filament">in0: [&#x27;G, &#x27;G+1] 32</code> means <code class="code language-verilog">in0</code> is a port of width 32, and it has the <em>availability interval</em> of <code class="code language-filament">[&#x27;G, &#x27;G+1]</code>. This idea corresponds
+directly to the observation we just made about our ALU only reading from <code class="code language-verilog">in0</code> and <code class="code language-verilog">in1</code> in the first cycle of its computation. We've
 encoded this directly into the language, and soon we'll see the cool things we can do with that. Similar observations can be made about
-<code>in1</code>, <code>opsel</code>, and <code>out</code>.</p>
+<code class="code language-verilog">in1</code>, <code class="code language-filament">opsel</code>, and <code class="code language-filament">out</code>.</p>
 <p>Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
 library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:</p>
 <div class="code language-filament">
@@ -308,7 +308,7 @@ Verilog implementation? We'll try it inside our Filament ALU.
     out = mux.out;<br> </code></pre>
 </div></p>
 <p>In the first three lines, we are creating an <strong>instance</strong> of a component and then <strong>invoking</strong> it at the specified time with
-the given inputs. In the case of the adder, we instantiate the <code>Add</code> component at time <code>'G</code> with inputs <code>in0</code> and <code>in1</code>. We bind
+the given inputs. In the case of the adder, we instantiate the <code>Add</code> component at time <code>'G</code> with inputs <code class="code language-verilog">in0</code> and <code class="code language-verilog">in1</code>. We bind
 this invocation to the name <code>add</code>, so we can refer to its output ports later, like when we pass it into the mux. When we try to
 compile this code, we get the following error:</p>
 <p><div class="code language-filament">
