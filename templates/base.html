@@ -4,10 +4,13 @@
     {% include "head.html" %}
     <link rel="stylesheet" type="text/css" href="{{ get_url(path="css/prism.css") | safe }}">
     <link rel="stylesheet" type="text/css" href="{{ get_url(path="css/prism-futil.css") | safe }}">
+    <link rel="stylesheet" type="text/css" href="{{ get_url(path="css/prism-verilog.css") | safe }}">
 </head>
 <body>
     <script src={{ get_url(path="js/prism.js") }}></script>
     <script src={{ get_url(path="js/prism-futil.js") }}></script>
+    <script src={{ get_url(path="js/prism-verilog.js") }}></script>
+
       <header>
           {% include "anemone/templates/header.html" %}
       </header>

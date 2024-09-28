@@ -18,35 +18,34 @@ Verilog, and I'll explain each step so even if you've never seen an HDL before, 
 
 Here's what our signature will look like. If anyone else wants to use our ALU in their design, this is what they'll see.
 
-```
+{% code(id="verilog") %}
 module alu
 (
     input  logic [31:0] in0,
     input  logic [31:0] in1,
     input  logic        opsel,
     output logic [31:0] out
-);
-```
+); {% end %}
 
 Our signature is straightforward: we have 32-bit operands and have a 1-bit control signal to select between multiplication and
 addition. Let's move on to the first part of the component's body.
 
-```
+{% code(id="verilog") %}
     logic [31:0] add_result;
     assign add_result = in0 + in1;
-```
+{% end %}
 
 We can use Verilog's `+` operator and it'll synthesize just fine. Let's move on to multiplication.
 
-```
+{% code(id="verilog") %}
     logic [31:0] mult_result;
     assign mult_result = in0 * in1;
-```
+{% end %}
 
 This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the `*` operator.
 Luckily, we have access to someone else's multiplier implementation; let's instantiate that instead.
 
-```
+{% code(id="verilog") %}
     logic [31:0] mult_result;
     
     imul multiplier
@@ -57,12 +56,12 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
         .in1   ()
         .out   ()
     );
-```
+{% end %}
 
 Here, `imul` is the module name and `multiplier` is the named instantiation of it inside our circuit. It looks like we'll need
 `clk` and `reset` signals for it; let's add those to our module signature.
 
-```
+{% code(id="verilog") %}
 module alu
 (
     input logic         clk,
@@ -73,11 +72,11 @@ module alu
     input  logic        opsel,
     output logic [31:0] out
 );
-```
+{% end %}
 
 Now, we can make the port connections for our instantiation.
 
-```
+{% code(id="verilog") %}
     logic [31:0] mult_result;
     
     imul multiplier
@@ -88,14 +87,14 @@ Now, we can make the port connections for our instantiation.
         .in1   (in1)
         .out   (mult_result)
     );
-```
+{% end %}
 
 One more step: we need to drive the output of our ALU. We'll do that with a mux to choose between the add and 
 multiply outputs.
 
-```
+{% code(id="verilog") %}
     assign out = opsel ? add_result : mult_result;
-```
+{% end %}
 This will assign `out` to `add_result` when `opsel` is 0 and `mult_result` when it is 1. 
 
 Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
@@ -131,7 +130,7 @@ Aha! This is an important clue. Implicit in our ALU design was our assumption th
 in the same cycle we sent its inputs. The waveform tells us this can't be true, but let's look at the code for the multiplier
 to confirm:
 
-```
+{% code(id="verilog") %}
     logic [31:0] mult_s1;
     logic [31:0] mult_s2;
     logic [31:0] mult_s3;
@@ -151,7 +150,7 @@ to confirm:
     end
 
     assign out = mult_s4;
-```
+{% end %}
 
 Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
 using `*`. `mult_s1`, `mult_s2`, `mult_s3`, and `mult_s4` each represent the pipeline registers we use to store the result of each stage.
@@ -161,7 +160,7 @@ set all of our registers to 0. Otherwise, we can forward the computation along f
 The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
 at the same time. Let's go back and fix that:
 
-```
+{% code(id="verilog") %}
     logic [31:0] add_s1;
     logic [31:0] add_s2;
     logic [31:0] add_s3;
@@ -180,7 +179,7 @@ at the same time. Let's go back and fix that:
             add_result <= add_s3;
         end
     end
-```
+{% end %}
 
 This block of code computes the addition and then saves the result until the multiplication is finished. Let's try testing
 again. 
@@ -219,7 +218,7 @@ code. We had to carefully extract all of it and try real hard not to forget any 
 ## The better way
 Now, we can finally understand where Filament comes in. This is what our ALU's signature would look like in Filament:
 
-{% code() %}
+{% code(id="filament") %}
 comp ALU<'G:1>(
     go: interface['G],
     in0: ['G, 'G+1] 32,
@@ -242,7 +241,7 @@ encoded this directly into the language, and soon we'll see the cool things we c
 Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
 library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:
 
-{% code() %}
+{% code(id="filament") %}
 comp Add[IN_WIDTH, ?OUT_WIDTH=IN_WIDTH]<'G: 'L-('G), ?'L: 1='G+1>(
       left: ['G, 'L] IN_WIDTH,
       right: ['G, 'L] IN_WIDTH,
@@ -255,7 +254,7 @@ We can tell this component is combinational because its outputs are produced in 
 inputs are provided.
 
 Here's the multiplier:
-{% code() %}
+{% code(id="filament") %}
 comp FastMult[W]<'G: 1>(
    left: ['G, 'G+1] W,
    right: ['G, 'G+1] W,
@@ -266,7 +265,7 @@ comp FastMult[W]<'G: 1>(
 
 Again, now we know the precise timing behavior of our multiplier. What happens if we make a mistake similar to the one we made in our
 Verilog implementation? We'll try it inside our Filament ALU.
-{% code() %}
+{% code(id="filament") %}
     add := new Add[32]<'G>(in0, in1);
     mult := new FastMult[32]<'G>(in0, in1);
     mux := new Mux[32]<'G+3>(opsel, add.out, mult.out);
@@ -278,7 +277,7 @@ the given inputs. In the case of the adder, we instantiate the `Add` component a
 this invocation to the name `add`, so we can refer to its output ports later, like when we pass it into the mux. When we try to 
 compile this code, we get the following error:
 
-{% code() %}
+{% code(id="filament") %}
 error: source port does not provide value for as long as destination requires
    ┌─ ../../proj/filament-blog1/alu.fil:14:37
    │
@@ -293,7 +292,7 @@ Compilation failed with 1 errors.
 This error points out the exact problem we had to figure out ourselves earlier. The output of `add` is available at `'G`, but
 the mux is expecting its inputs at `'G+3` because we invoked it at `'G+3` to account for the multiplier's delay. Now that we know
 the problem, the fix is simple: extend the availability of `add.out` using a register.
-{% code() %}
+{% code(id="filament") %}
     add := new Add[32]<'G>(in0, in1);
     add_reg := new Register[32]<'G, 'G+4>(add.out);
 
@@ -303,7 +302,7 @@ the problem, the fix is simple: extend the availability of `add.out` using a reg
 {% end %}
 
 Now, we get a different error from the compiler.
-{% code() %}
+{% code(id="filament") %}
 error: event provided to invocation triggers more often that invocation's event's delay allows
    ┌─ ../../proj/filament-blog1/alu.fil:14:33
    │
@@ -327,7 +326,7 @@ clear with an example: if we get a set of inputs at cycle 0, that computation wi
 get a set of inputs at cycle 1, that computation will need to use the register over cycles 1 to 5. This overlap causes a problem, since
 we only have a single physical register. There are actually two fixes: we can either alter our signature to reflect this constraint by
 changing the delay of `'G` to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:
-{% code() %}
+{% code(id="filament") %}
 
     add := new Add[32]<'G>(in0, in1);
     r0 := new Register[32]<'G, 'G+2>(add.out);
@@ -342,7 +341,7 @@ We add a chain of registers, which achieves our desired throughput. Now, there w
 inputs. Now, our program type checks. Let's test it.
 
 We specify our inputs to the Filament design with a JSON:
-{% code() %}
+{% code(id="filament") %}
 {
     "opsel": [1, 0, 1, 0],
     "in0":   [3, 4, 5, 6],
@@ -350,7 +349,7 @@ We specify our inputs to the Filament design with a JSON:
 }
 {% end %}
 This means we drive `opsel` with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:
-{% code() %}
+{% code(id="filament") %}
 {"out": {"0": [11], "1": [36], "2": [7], "3": [18]}, "cycles": 7}
 {% end %}
 Success!

@@ -32,7 +32,7 @@ green     #859900
 
 code[class*="language-"],
 pre[class*="language-"] {
-	color: #657b83; /* base00 */
+	color: #657b83; 
 	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 	font-size: 1em;
 	text-align: left;
@@ -69,11 +69,13 @@ pre[class*="language-"] {
 	margin: .5em 0;
 	overflow: auto;
 	border-radius: 0.3em;
+	background-color: #3c3836;
 }
 
 :not(pre) > code[class*="language-"],
 pre[class*="language-"] {
 	/* background-color: #fdf6e3; base3 */
+	background-color: #3c3836;
 }
 
 /* Inline code */
@@ -119,7 +121,8 @@ pre[class*="language-"] {
 
 .token.entity {
 	color: #657b83; /* base00 */
-	background: #eee8d5; /* base2 */
+	background: #3c3836; /* base2 */
+	
 }
 
 .token.atrule,
