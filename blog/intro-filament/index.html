@@ -16,11 +16,11 @@
 
 
 
-<title>Draft: An Introduction to Filament</title>
+<title>An Introduction to Filament</title>
 
 
 
-<meta name="title" content="Draft: An Introduction to Filament">
+<meta name="title" content="An Introduction to Filament">
 
 
 
@@ -30,7 +30,7 @@
 <meta property="og:site_name" content="">
 
 
-<meta property="og:title" content="Draft: An Introduction to Filament">
+<meta property="og:title" content="An Introduction to Filament">
 
 
 
@@ -39,7 +39,7 @@
 <meta property="twitter:card" content="summary_large_image">
 <meta property="twitter:url" content="https://gabizon103.github.io/blog/intro-filament/">
 
-<meta property="twitter:title" content="Draft: An Introduction to Filament">
+<meta property="twitter:title" content="An Introduction to Filament">
 
 
 
@@ -74,9 +74,9 @@
       <main>
           
 <h1 class="title">
-  Draft: An Introduction to Filament
+  An Introduction to Filament
 </h1>
-<p class="subtitle"><strong>2024-09-16</strong></p>
+<p class="subtitle"><strong>2024-10-01</strong></p>
 <p>These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
 has been an HDL like SystemVerilog or VHDL. Many people (me included) are dissatisfied with this; traditional HDLs provide
 a very tedious and error-prone programming model. In response,
@@ -115,10 +115,10 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
     
 imul multiplier
 (
-    .clk   ()
-    .reset ()
-    .in0   ()
-    .in1   ()
+    .clk   (),
+    .reset (),
+    .in0   (),
+    .in1   (),
     .out   ()
 );<br> </code></pre>
 </div>
@@ -142,10 +142,10 @@ imul multiplier
     
 imul multiplier
 (
-    .clk   (clk)
-    .reset (reset)
-    .in0   (in0)
-    .in1   (in1)
+    .clk   (clk),
+    .reset (reset),
+    .in0   (in0),
+    .in1   (in1),
     .out   (mult_result)
 );<br> </code></pre>
 </div>
