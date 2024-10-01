@@ -154,7 +154,7 @@ multiply outputs.</p>
 <p><div class="code language-verilog">
 <pre><code>assign out = opsel ? add_result : mult_result;<br> </code></pre>
 </div>
-This will assign <code class="code language-verilog">out</code> to <code class="code language-verilog">add_result</code> when <code class="code language-verilog">opsel</code> is 0 and <code class="code language-verilog">mult_result</code> when it is 1.</p>
+This will assign <code class="code language-verilog">out</code> to <code class="code language-verilog">add_result</code> when <code class="code language-verilog">opsel</code> is 1 and <code class="code language-verilog">mult_result</code> when it is 0.</p>
 <p>Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
 curious you can view the code <a href="https://github.com/gabizon103/intro-filament">here</a>.</p>
 <p>I made a file <code class="code language-verilog">alu_tb.v</code> which can be used to simulate our design with <code class="code language-verilog">iverilog</code>:</p>
