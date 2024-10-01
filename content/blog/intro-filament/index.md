@@ -95,7 +95,7 @@ multiply outputs.
 {% code(id="verilog") %}
     assign out = opsel ? add_result : mult_result;
 {% end %}
-This will assign {{ inlinecode(id="verilog", body="out") }} to {{ inlinecode(id="verilog", body="add_result") }} when {{ inlinecode(id="verilog", body="opsel") }} is 0 and {{ inlinecode(id="verilog", body="mult_result") }} when it is 1. 
+This will assign {{ inlinecode(id="verilog", body="out") }} to {{ inlinecode(id="verilog", body="add_result") }} when {{ inlinecode(id="verilog", body="opsel") }} is 1 and {{ inlinecode(id="verilog", body="mult_result") }} when it is 0. 
 
 Looks like we're done! Time to test our ALU. I won't go through the short test bench I wrote for our ALU, but if you're
 curious you can view the code [here](https://github.com/gabizon103/intro-filament).
