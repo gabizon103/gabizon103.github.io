@@ -32,14 +32,14 @@ addition. Let's move on to the first part of the component's body.
 
 {% code(id="verilog") %}
     logic [31:0] add_result;
-    assign add_result = in0 + in1;
+assign add_result = in0 + in1;
 {% end %}
 
 We can use Verilog's {{ inlinecode(id="verilog", body="+") }} operator and it'll synthesize just fine. Let's move on to multiplication.
 
 {% code(id="verilog") %}
     logic [31:0] mult_result;
-    assign mult_result = in0 * in1;
+assign mult_result = in0 * in1;
 {% end %}
 
 This would also work fine, but let's say that we aren't happy with how our downstream tools will synthesize the {{ inlinecode(id="verilog", body="*") }} operator.
@@ -48,14 +48,14 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
 {% code(id="verilog") %}
     logic [31:0] mult_result;
     
-    imul multiplier
-    (
-        .clk   ()
-        .reset ()
-        .in0   ()
-        .in1   ()
-        .out   ()
-    );
+imul multiplier
+(
+    .clk   ()
+    .reset ()
+    .in0   ()
+    .in1   ()
+    .out   ()
+);
 {% end %}
 
 Here, {{ inlinecode(id="verilog", body="imul") }} is the module name and {{ inlinecode(id="verilog", body="multiplier") }} is the named instantiation of it inside our circuit. It looks like we'll need
@@ -79,14 +79,14 @@ Now, we can make the port connections for our instantiation.
 {% code(id="verilog") %}
     logic [31:0] mult_result;
     
-    imul multiplier
-    (
-        .clk   (clk)
-        .reset (reset)
-        .in0   (in0)
-        .in1   (in1)
-        .out   (mult_result)
-    );
+imul multiplier
+(
+    .clk   (clk)
+    .reset (reset)
+    .in0   (in0)
+    .in1   (in1)
+    .out   (mult_result)
+);
 {% end %}
 
 One more step: we need to drive the output of our ALU. We'll do that with a mux to choose between the add and 
@@ -132,24 +132,24 @@ to confirm:
 
 {% code(id="verilog") %}
     logic [31:0] mult_s1;
-    logic [31:0] mult_s2;
-    logic [31:0] mult_s3;
-    logic [31:0] mult_s4;
+logic [31:0] mult_s2;
+logic [31:0] mult_s3;
+logic [31:0] mult_s4;
 
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            mult_s1 <= 32'd0;
-            mult_s2 <= 32'd0;
-            mult_s3 <= 32'd0;
-        end else begin
-            mult_s1 <= in0 * in1;
-            mult_s2 <= mult_s1;
-            mult_s3 <= mult_s2;
-            mult_s4 <= mult_s3;
-        end
+always_ff @(posedge clk) begin
+    if (reset) begin
+        mult_s1 <= 32'd0;
+        mult_s2 <= 32'd0;
+        mult_s3 <= 32'd0;
+    end else begin
+        mult_s1 <= in0 * in1;
+        mult_s2 <= mult_s1;
+        mult_s3 <= mult_s2;
+        mult_s4 <= mult_s3;
     end
+end
 
-    assign out = mult_s4;
+assign out = mult_s4;
 {% end %}
 
 Let's step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
@@ -161,23 +161,23 @@ The fundamental problem with our original ALU was the fact that we expected the 
 at the same time. Let's go back and fix that:
 
 {% code(id="verilog") %} logic [31:0] add_s1;
-    logic [31:0] add_s2;
-    logic [31:0] add_s3;
-    logic [31:0] add_result;
+logic [31:0] add_s2;
+logic [31:0] add_s3;
+logic [31:0] add_result;
 
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            add_s1 <= 0;
-            add_s2 <= 0;
-            add_s3 <= 0;
-            add_result <= 0;
-        end else begin
-            add_s1 <= in0 + in1;
-            add_s2 <= add_s1;
-            add_s3 <= add_s2;
-            add_result <= add_s3;
-        end
+always_ff @(posedge clk) begin
+    if (reset) begin
+        add_s1 <= 0;
+        add_s2 <= 0;
+        add_s3 <= 0;
+        add_result <= 0;
+    end else begin
+        add_s1 <= in0 + in1;
+        add_s2 <= add_s1;
+        add_s3 <= add_s2;
+        add_result <= add_s3;
     end
+end
 {% end %}
 
 This block of code computes the addition and then saves the result until the multiplication is finished. Let's try testing
@@ -232,7 +232,7 @@ simple enough. {{ inlinecode(id="filament", body="<'G:1>") }} means that there i
 {{ inlinecode(id="filament", body="go: interface['G]") }} means we can think of the event {{ inlinecode(id="filament", body="'G") }} as signaling the "start" of the computation. Filament's events correspond
 directly to clock cycles, so {{ inlinecode(id="filament", body="'G") }} is really a clock cycle. Everything else inside of {{ inlinecode(id="filament", body="ALU") }}  happens in relation to {{ inlinecode(id="filament", body="'G") }} . 
 
-{{ inlinecode(id="filament", body="in0: ['G, 'G+1] 32") }} means {{ inlinecode(id="verilog", body="in0") }} is a port of width 32, and it has the *availability interval* of {{ inlinecode(id="filament", body="['G, 'G+1]") }}. This idea corresponds
+{{ inlinecode(id="filament", body="in0: ['G, 'G+1] 32") }} means {{ inlinecode(id="verilog", body="in0") }} is a port of width 32, and it has the **availability interval** of {{ inlinecode(id="filament", body="['G, 'G+1]") }}. This idea corresponds
 directly to the observation we just made about our ALU only reading from {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }} in the first cycle of its computation. We've
 encoded this directly into the language, and soon we'll see the cool things we can do with that. Similar observations can be made about
 {{ inlinecode(id="verilog", body="in1") }}, {{ inlinecode(id="filament", body="opsel") }}, and {{ inlinecode(id="filament", body="out") }}.
@@ -240,14 +240,16 @@ encoded this directly into the language, and soon we'll see the cool things we c
 Now, let's implement our ALU and see what happens if we make the same mistake as before. We have access to Filament's primitive
 library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:
 
-{% code(id="filament") %}
-comp Add[IN_WIDTH, ?OUT_WIDTH=IN_WIDTH]<'G: 'L-('G), ?'L: 1='G+1>(
-      left: ['G, 'L] IN_WIDTH,
-      right: ['G, 'L] IN_WIDTH,
-   ) -> (
-      out: ['G, 'L] OUT_WIDTH
-   ) where 'L > 'G, IN_WIDTH <= OUT_WIDTH, IN_WIDTH > 0, OUT_WIDTH > 0;
+{% code(id="filament") %} comp Add[W]<'G: 1>(
+    right: ['G, 'G+1] W,
+    left:  ['G, 'G+1] W,
+) -> (
+    out: ['G, 'G+1] W
+) W > 0
 {% end %}
+
+Quick note: Filament components can take parameters, which go in the brackets directly after the component name. Here,
+{{ inlinecode(id="filament", body="W") }} is a parameter we use to represent the width of our operands.
 
 We can tell this component is combinational because its outputs are produced in the same cycle that its
 inputs are provided.
@@ -264,16 +266,16 @@ comp FastMult[W]<'G: 1>(
 
 Again, now we know the precise timing behavior of our multiplier. What happens if we make a mistake similar to the one we made in our
 Verilog implementation? We'll try it inside our Filament ALU.
-{% code(id="filament") %}
-    add := new Add[32]<'G>(in0, in1);
-    mult := new FastMult[32]<'G>(in0, in1);
-    mux := new Mux[32]<'G+3>(opsel, add.out, mult.out);
-    out = mux.out;
+{% code(id="filament") %}add := new Add[32]<'G>(in0, in1);
+mult := new FastMult[32]<'G>(in0, in1);
+mux := new Mux[32]<'G+3>(opsel, add.out, mult.out);
+out = mux.out;
 {% end %}
 
 In the first three lines, we are creating an **instance** of a component and then **invoking** it at the specified time with
-the given inputs. In the case of the adder, we instantiate the `Add` component at time `'G` with inputs {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }}. We bind
-this invocation to the name `add`, so we can refer to its output ports later, like when we pass it into the mux. When we try to 
+the given inputs. In the case of the adder, we instantiate the {{inlinecode(id="filament", body="Add")}} component at time
+{{inlinecode(id="filament", body="'G")}} with inputs {{ inlinecode(id="verilog", body="in0") }} and {{ inlinecode(id="verilog", body="in1") }}. We bind
+this invocation to the name `{{inlinecode(id="filament", body="add")}}, so we can refer to its output ports later, like when we pass it into the mux. When we try to 
 compile this code, we get the following error:
 
 {% code(id="filament") %}
@@ -288,16 +290,15 @@ error: source port does not provide value for as long as destination requires
 
 Compilation failed with 1 errors.
 {% end %}
-This error points out the exact problem we had to figure out ourselves earlier. The output of `add` is available at `'G`, but
-the mux is expecting its inputs at `'G+3` because we invoked it at `'G+3` to account for the multiplier's delay. Now that we know
-the problem, the fix is simple: extend the availability of `add.out` using a register.
-{% code(id="filament") %}
-    add := new Add[32]<'G>(in0, in1);
-    add_reg := new Register[32]<'G, 'G+4>(add.out);
+This error points out the exact problem we had to figure out ourselves earlier. The output of {{inlinecode(id="filament", body="add")}} is available at {{inlinecode(id="filament", body="'G")}}, but
+the mux is expecting its inputs at {{inlinecode(id="filament", body="'G+3")}} because we invoked it at `{{inlinecode(id="filament", body="'G+3")}} to account for the multiplier's delay. Now that we know
+the problem, the fix is simple: extend the availability of {{inlinecode(id="filament", body="add.out")}} using a register.
+{% code(id="filament") %} add := new Add[32]<'G>(in0, in1);
+add_reg := new Register[32]<'G, 'G+4>(add.out);
 
-    mult := new FastMult[32]<'G>(in0, in1);
-    mux := new Mux[32]<'G+3>(opsel, add_reg.out, mult.out);
-    out = mux.out;
+mult := new FastMult[32]<'G>(in0, in1);
+mux := new Mux[32]<'G+3>(opsel, add_reg.out, mult.out);
+out = mux.out;
 {% end %}
 
 Now, we get a different error from the compiler.
@@ -318,23 +319,21 @@ error: event provided to invocation triggers more often that invocation's event'
 
 Compilation failed with 1 errors.
 {% end %}
-This error has to do with the **delay** of our ALU, which is associated with the ALU's event `'G`. In our signature, we specified
-that `'G` has a delay of 1, which means that ALU can process a new input every cycle. If we look more closely at the error, we
-see that it is telling us that because we use the register over the interval `'G, G+4`, we can't possibly handle new inputs. It is most
+This error has to do with the **delay** of our ALU, which is associated with the ALU's event {{inlinecode(id="filament", body="'G")}}. In our signature, we specified
+that {{inlinecode(id="filament", body="'G")}} has a delay of 1, which means that ALU can process a new input every cycle. If we look more closely at the error, we
+see that it is telling us that because we use the register over the interval {{inlinecode(id="filament", body="'G, 'G+4")}}, we can't possibly handle new inputs. It is most
 clear with an example: if we get a set of inputs at cycle 0, that computation will be using the register over cycles 0 to 4. If we then
 get a set of inputs at cycle 1, that computation will need to use the register over cycles 1 to 5. This overlap causes a problem, since
 we only have a single physical register. There are actually two fixes: we can either alter our signature to reflect this constraint by
-changing the delay of `'G` to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:
-{% code(id="filament") %}
+changing the delay of {{inlinecode(id="filament", body="'G")}} to 3, or we can alter our design to achieve a delay of 1. Let's explore the second option:
+{% code(id="filament") %}add := new Add[32]<'G>(in0, in1);
+r0 := new Register[32]<'G, 'G+2>(add.out);
+r1 := new Register[32]<'G+1, 'G+3>(r0.out);
+r2 := new Register[32]<'G+2, 'G+4>(r1.out);
 
-    add := new Add[32]<'G>(in0, in1);
-    r0 := new Register[32]<'G, 'G+2>(add.out);
-    r1 := new Register[32]<'G+1, 'G+3>(r0.out);
-    r2 := new Register[32]<'G+2, 'G+4>(r1.out);
-
-    mult := new FastMult[32]<'G>(in0, in1);
-    mux := new Mux[32]<'G+3>(opsel, r2.out, mult.out);
-    out = mux.out;
+mult := new FastMult[32]<'G>(in0, in1);
+mux := new Mux[32]<'G+3>(opsel, r2.out, mult.out);
+out = mux.out;
 {% end %}
 We add a chain of registers, which achieves our desired throughput. Now, there won't be resource contention between two successive
 inputs. Now, our program type checks. Let's test it.
@@ -347,7 +346,7 @@ We specify our inputs to the Filament design with a JSON:
     "in1":   [8, 9, 2, 3]
 }
 {% end %}
-This means we drive `opsel` with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:
+This means we drive {{inlinecode(id="filament", body="opsel")}} with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:
 {% code(id="filament") %}
 {"out": {"0": [11], "1": [36], "2": [7], "3": [18]}, "cycles": 7}
 {% end %}
