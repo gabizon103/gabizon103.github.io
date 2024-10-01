@@ -1,6 +1,6 @@
 +++
-title = "Draft: An Introduction to Filament"
-date = 2024-09-16
+title = "An Introduction to Filament"
+date = 2024-10-1
 +++
 
 These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
@@ -50,10 +50,10 @@ Luckily, we have access to someone else's multiplier implementation; let's insta
     
 imul multiplier
 (
-    .clk   ()
-    .reset ()
-    .in0   ()
-    .in1   ()
+    .clk   (),
+    .reset (),
+    .in0   (),
+    .in1   (),
     .out   ()
 );
 {% end %}
@@ -81,10 +81,10 @@ Now, we can make the port connections for our instantiation.
     
 imul multiplier
 (
-    .clk   (clk)
-    .reset (reset)
-    .in0   (in0)
-    .in1   (in1)
+    .clk   (clk),
+    .reset (reset),
+    .in0   (in0),
+    .in1   (in1),
     .out   (mult_result)
 );
 {% end %}
