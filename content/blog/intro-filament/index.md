@@ -1,6 +1,6 @@
 +++
 title = "An Introduction to Filament"
-date = 2024-10-1
+date = 2024-10-01
 +++
 
 These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
