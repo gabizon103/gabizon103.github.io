@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title></title>
+    <link rel="self" type="application/atom+xml" href="https://gabizon103.github.io/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://gabizon103.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2024-10-01T00:00:00+00:00</updated>
+    <id>https://gabizon103.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>An Introduction to Filament</title>
+        <published>2024-10-01T00:00:00+00:00</published>
+        <updated>2024-10-01T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://gabizon103.github.io/blog/intro-filament/"/>
+        <id>https://gabizon103.github.io/blog/intro-filament/</id>
+        
+        <content type="html" xml:base="https://gabizon103.github.io/blog/intro-filament/">&lt;p&gt;These days, everybody wants to design custom hardware and they want to do it quickly. Historically, the go-to tool for that
+has been an HDL like SystemVerilog or VHDL. Many people (me included) are dissatisfied with this; traditional HDLs provide
+a very tedious and error-prone programming model. In response,
+a lot of very smart people have thought up interesting alternatives to traditional HDLs with the goal of making hardware design
+more accessible and productive (links to come). Here, I&#x27;ll talk about the one I work on: &lt;a href=&quot;https:&#x2F;&#x2F;filamenthdl.com&quot;&gt;Filament&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Before we get there, though, we&#x27;ll work through a small example in Verilog that will highlight the specific problem that
+we want to solve with Filament.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;an-example&quot;&gt;An example&lt;&#x2F;h2&gt;
+&lt;p&gt;Let&#x27;s start small -- we&#x27;ll design a simple ALU that can support multiplication and addition. I&#x27;ll be writing my code snippets in
+Verilog, and I&#x27;ll explain each step so even if you&#x27;ve never seen an HDL before, you can still follow what we&#x27;re doing.&lt;&#x2F;p&gt;
+&lt;p&gt;Here&#x27;s what our signature will look like. If anyone else wants to use our ALU in their design, this is what they&#x27;ll see.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;module alu
+(
+    input  logic [31:0] in0,
+    input  logic [31:0] in1,
+    input  logic        opsel,
+    output logic [31:0] out
+);&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;Our signature is straightforward: we have 32-bit operands and have a 1-bit control signal to select between multiplication and
+addition. Let&#x27;s move on to the first part of the component&#x27;s body.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] add_result;
+assign add_result = in0 + in1;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;We can use Verilog&#x27;s &lt;code class=&quot;code language-verilog&quot;&gt;+&lt;&#x2F;code&gt; operator and it&#x27;ll synthesize just fine. Let&#x27;s move on to multiplication.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] mult_result;
+assign mult_result = in0 * in1;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;This would also work fine, but let&#x27;s say that we aren&#x27;t happy with how our downstream tools will synthesize the &lt;code class=&quot;code language-verilog&quot;&gt;*&lt;&#x2F;code&gt; operator.
+Luckily, we have access to someone else&#x27;s multiplier implementation; let&#x27;s instantiate that instead.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] mult_result;
+    
+imul multiplier
+(
+    .clk   (),
+    .reset (),
+    .in0   (),
+    .in1   (),
+    .out   ()
+);&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;Here, &lt;code class=&quot;code language-verilog&quot;&gt;imul&lt;&#x2F;code&gt; is the module name and &lt;code class=&quot;code language-verilog&quot;&gt;multiplier&lt;&#x2F;code&gt; is the named instantiation of it inside our circuit. It looks like we&#x27;ll need
+&lt;code class=&quot;code language-verilog&quot;&gt;clk&lt;&#x2F;code&gt; and &lt;code class=&quot;code language-verilog&quot;&gt;reset&lt;&#x2F;code&gt; signals for it; let&#x27;s add those to our module signature.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;module alu
+(
+    input logic         clk,
+    input logic         reset,
+
+    input  logic [31:0] in0,
+    input  logic [31:0] in1,
+    input  logic        opsel,
+    output logic [31:0] out
+);&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;Now, we can make the port connections for our instantiation.&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] mult_result;
+    
+imul multiplier
+(
+    .clk   (clk),
+    .reset (reset),
+    .in0   (in0),
+    .in1   (in1),
+    .out   (mult_result)
+);&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;One more step: we need to drive the output of our ALU. We&#x27;ll do that with a mux to choose between the add and
+multiply outputs.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;assign out = opsel ? add_result : mult_result;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+This will assign &lt;code class=&quot;code language-verilog&quot;&gt;out&lt;&#x2F;code&gt; to &lt;code class=&quot;code language-verilog&quot;&gt;add_result&lt;&#x2F;code&gt; when &lt;code class=&quot;code language-verilog&quot;&gt;opsel&lt;&#x2F;code&gt; is 1 and &lt;code class=&quot;code language-verilog&quot;&gt;mult_result&lt;&#x2F;code&gt; when it is 0.&lt;&#x2F;p&gt;
+&lt;p&gt;Looks like we&#x27;re done! Time to test our ALU. I won&#x27;t go through the short test bench I wrote for our ALU, but if you&#x27;re
+curious you can view the code &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;gabizon103&#x2F;intro-filament&quot;&gt;here&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;I made a file &lt;code class=&quot;code language-verilog&quot;&gt;alu_tb.v&lt;&#x2F;code&gt; which can be used to simulate our design with &lt;code class=&quot;code language-verilog&quot;&gt;iverilog&lt;&#x2F;code&gt;:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;% iverilog -Wall -g2012 -o alu_tb alu_tb.v
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;I included print statements in the test bench, so we can inspect the output:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;% .&#x2F;alu_tb
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 0: in0 = 00000002, in1 = 00000004, opsel = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 0: out = 00000006
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 1: in0 = 00000002, in1 = 00000004, opsel = 0
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 1: out = 00000000
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;We start out by testing our ALU&#x27;s add functionality, and 2 + 4 does indeed equal 6! We test multiplication on the next
+cycle, but something is off. Instead of getting 8 like we expect, we get 0. This is weird, so let&#x27;s dig into the
+waveform that we generated from our test bench.&lt;&#x2F;p&gt;
+&lt;!-- &lt;div &gt;
+  &lt;img src=&quot;content&amp;#x2F;blog&amp;#x2F;filament1&amp;#x2F;img.png&quot; &gt;
+  
+&lt;&#x2F;div&gt; --&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;gabizon103.github.io&#x2F;blog&#x2F;intro-filament&#x2F;image.png&quot; alt=&quot;alt text&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;At cycle 0, we see that &lt;code class=&quot;code language-verilog&quot;&gt;opsel&lt;&#x2F;code&gt; is 1, meaning we are computing the addition. In that same cycle, &lt;code class=&quot;code language-verilog&quot;&gt;out&lt;&#x2F;code&gt; is 6. This makes sense, because addition is combinational. In the next cycle,
+we set &lt;code class=&quot;code language-verilog&quot;&gt;opsel&lt;&#x2F;code&gt; to 0. However, &lt;code class=&quot;code language-verilog&quot;&gt;out&lt;&#x2F;code&gt; doesn&#x27;t become 8 until cycle 3.&lt;&#x2F;p&gt;
+&lt;p&gt;Aha! This is an important clue. Implicit in our ALU design was our assumption that the multiplier would return its output
+in the same cycle we sent its inputs. The waveform tells us this can&#x27;t be true, but let&#x27;s look at the code for the multiplier
+to confirm:&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] mult_s1;
+logic [31:0] mult_s2;
+logic [31:0] mult_s3;
+logic [31:0] mult_s4;
+
+always_ff @(posedge clk) begin
+    if (reset) begin
+        mult_s1 &amp;lt;= 32&amp;#x27;d0;
+        mult_s2 &amp;lt;= 32&amp;#x27;d0;
+        mult_s3 &amp;lt;= 32&amp;#x27;d0;
+    end else begin
+        mult_s1 &amp;lt;= in0 * in1;
+        mult_s2 &amp;lt;= mult_s1;
+        mult_s3 &amp;lt;= mult_s2;
+        mult_s4 &amp;lt;= mult_s3;
+    end
+end
+
+assign out = mult_s4;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;Let&#x27;s step through this block of code. This multiplier has 4 pipeline stages. In the first stage, we compute the multiplication
+using &lt;code class=&quot;code language-verilog&quot;&gt;*&lt;&#x2F;code&gt;. &lt;code class=&quot;code language-verilog&quot;&gt;mult_s1&lt;&#x2F;code&gt;, &lt;code class=&quot;code language-verilog&quot;&gt;mult_s2&lt;&#x2F;code&gt;, &lt;code class=&quot;code language-verilog&quot;&gt;mult_s3&lt;&#x2F;code&gt;, and &lt;code class=&quot;code language-verilog&quot;&gt;mult_s4&lt;&#x2F;code&gt; each represent the pipeline registers we use to store the result of each stage.
+The &lt;code class=&quot;code language-verilog&quot;&gt;always_ff&lt;&#x2F;code&gt; block specifies what assignments we should make at the start of each clock cycle. If reset is asserted, we should
+set all of our registers to 0. Otherwise, we can forward the computation along from the previous register.&lt;&#x2F;p&gt;
+&lt;p&gt;The fundamental problem with our original ALU was the fact that we expected the results from the adder and the multiplier to be ready
+at the same time. Let&#x27;s go back and fix that:&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-verilog&quot;&gt;
+&lt;pre&gt;&lt;code&gt;logic [31:0] add_s1;
+logic [31:0] add_s2;
+logic [31:0] add_s3;
+logic [31:0] add_result;
+
+always_ff @(posedge clk) begin
+    if (reset) begin
+        add_s1 &amp;lt;= 0;
+        add_s2 &amp;lt;= 0;
+        add_s3 &amp;lt;= 0;
+        add_result &amp;lt;= 0;
+    end else begin
+        add_s1 &amp;lt;= in0 + in1;
+        add_s2 &amp;lt;= add_s1;
+        add_s3 &amp;lt;= add_s2;
+        add_result &amp;lt;= add_s3;
+    end
+end&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;This block of code computes the addition and then saves the result until the multiplication is finished. Let&#x27;s try testing
+again.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;.&#x2F;alu_tb
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 0: in0 = 00000002, in1 = 00000004, opsel = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 0: out = xxxxxxxx
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 1: in0 = 00000002, in1 = 00000004, opsel = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 1: out = xxxxxxxx
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 2: in0 = 00000002, in1 = 00000004, opsel = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 2: out = xxxxxxxx
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 3: in0 = 00000002, in1 = 00000004, opsel = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 3: out = 00000006
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 4: reset = 1
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 5: in0 = 00000002, in1 = 00000004, opsel = 0
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 5: out = 00000000
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 6: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 6: out = 00000000
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 7: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 7: out = 00000000
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 8: in0 = xxxxxxxx, in1 = xxxxxxxx, opsel = 0
+&lt;&#x2F;span&gt;&lt;span&gt;cycle 8: out = 00000008
+&lt;&#x2F;span&gt;&lt;span&gt;alu_tb.v:70: $finish called at 101 (1s)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;On cycle 0, we send the ALU our addition. It doesn&#x27;t finish until cycle 3, where we see the correct output. On cycle 5,
+we send the ALU our multiplication. It doesn&#x27;t finish until cycle 8, where we see the correct output. If you look closely
+at the above trace, you&#x27;ll see that when we send the multiplication, we don&#x27;t have to assert &lt;code class=&quot;code language-verilog&quot;&gt;in0&lt;&#x2F;code&gt; and &lt;code class=&quot;code language-verilog&quot;&gt;in1&lt;&#x2F;code&gt; for all 4 cycles;
+looking at our implementation, you&#x27;ll notice that&#x27;s because we only read from &lt;code class=&quot;code language-verilog&quot;&gt;in0&lt;&#x2F;code&gt; and &lt;code class=&quot;code language-verilog&quot;&gt;in1&lt;&#x2F;code&gt; in cycle 0. You&#x27;ll notice something
+similar for &lt;code class=&quot;code language-verilog&quot;&gt;opsel&lt;&#x2F;code&gt;; we only read from it in the very last cycle of our computation.&lt;&#x2F;p&gt;
+&lt;p&gt;Now, that was a lot of information about our circuit. Information which is critical to our circuit functioning properly,
+especially if it is interacting with other circuits. And, as you definitely noticed, none of it was explicit in our Verilog
+code. We had to carefully extract all of it and try real hard not to forget any of it. What if there was a better way?&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;the-better-way&quot;&gt;The better way&lt;&#x2F;h2&gt;
+&lt;p&gt;Now, we can finally understand where Filament comes in. This is what our ALU&#x27;s signature would look like in Filament:&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;comp ALU&amp;lt;&amp;#x27;G:1&amp;gt;(
+    go: interface[&amp;#x27;G],
+    in0: [&amp;#x27;G, &amp;#x27;G+1] 32,
+    in1: [&amp;#x27;G, &amp;#x27;G+1] 32,
+    opsel: [&amp;#x27;G+3, &amp;#x27;G+4] 1
+) -&amp;gt; (
+    out: [&amp;#x27;G+3, &amp;#x27;G+4] 32
+)&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;This is necessarily more verbose than a Verilog signature. Let&#x27;s break it down. &lt;code class=&quot;code language-filament&quot;&gt;comp ALU&lt;&#x2F;code&gt; means this is a component named ALU;
+simple enough. &lt;code class=&quot;code language-filament&quot;&gt;&amp;lt;&amp;#x27;G:1&amp;gt;&lt;&#x2F;code&gt; means that there is an event &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; associated with this component that has a delay of 1; more on that later.
+&lt;code class=&quot;code language-filament&quot;&gt;go: interface[&amp;#x27;G]&lt;&#x2F;code&gt; means we can think of the event &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; as signaling the &quot;start&quot; of the computation. Filament&#x27;s events correspond
+directly to clock cycles, so &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; is really a clock cycle. Everything else inside of &lt;code class=&quot;code language-filament&quot;&gt;ALU&lt;&#x2F;code&gt;  happens in relation to &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; .&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code class=&quot;code language-filament&quot;&gt;in0: [&amp;#x27;G, &amp;#x27;G+1] 32&lt;&#x2F;code&gt; means &lt;code class=&quot;code language-verilog&quot;&gt;in0&lt;&#x2F;code&gt; is a port of width 32, and it has the &lt;strong&gt;availability interval&lt;&#x2F;strong&gt; of &lt;code class=&quot;code language-filament&quot;&gt;[&amp;#x27;G, &amp;#x27;G+1]&lt;&#x2F;code&gt;. This idea corresponds
+directly to the observation we just made about our ALU only reading from &lt;code class=&quot;code language-verilog&quot;&gt;in0&lt;&#x2F;code&gt; and &lt;code class=&quot;code language-verilog&quot;&gt;in1&lt;&#x2F;code&gt; in the first cycle of its computation. We&#x27;ve
+encoded this directly into the language, and soon we&#x27;ll see the cool things we can do with that. Similar observations can be made about
+&lt;code class=&quot;code language-verilog&quot;&gt;in1&lt;&#x2F;code&gt;, &lt;code class=&quot;code language-filament&quot;&gt;opsel&lt;&#x2F;code&gt;, and &lt;code class=&quot;code language-filament&quot;&gt;out&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Now, let&#x27;s implement our ALU and see what happens if we make the same mistake as before. We have access to Filament&#x27;s primitive
+library, which includes components like adders, multipliers, and muxes. Here is the signature for an adder:&lt;&#x2F;p&gt;
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;comp Add[W]&amp;lt;&amp;#x27;G: 1&amp;gt;(
+    right: [&amp;#x27;G, &amp;#x27;G+1] W,
+    left:  [&amp;#x27;G, &amp;#x27;G+1] W,
+) -&amp;gt; (
+    out: [&amp;#x27;G, &amp;#x27;G+1] W
+) W &amp;gt; 0&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+&lt;p&gt;Quick note: Filament components can take parameters, which go in the brackets directly after the component name. Here,
+&lt;code class=&quot;code language-filament&quot;&gt;W&lt;&#x2F;code&gt; is a parameter we use to represent the width of our operands.&lt;&#x2F;p&gt;
+&lt;p&gt;We can tell this component is combinational because its outputs are produced in the same cycle that its
+inputs are provided.&lt;&#x2F;p&gt;
+&lt;p&gt;Here&#x27;s the multiplier:
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;comp FastMult[W]&amp;lt;&amp;#x27;G: 1&amp;gt;(
+   left: [&amp;#x27;G, &amp;#x27;G+1] W,
+   right: [&amp;#x27;G, &amp;#x27;G+1] W,
+) -&amp;gt; (
+   out: [&amp;#x27;G+3, &amp;#x27;G+4] W,
+) where W &amp;gt; 0&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Again, now we know the precise timing behavior of our multiplier. What happens if we make a mistake similar to the one we made in our
+Verilog implementation? We&#x27;ll try it inside our Filament ALU.
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;add := new Add[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+mult := new FastMult[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+mux := new Mux[32]&amp;lt;&amp;#x27;G+3&amp;gt;(opsel, add.out, mult.out);
+out = mux.out;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;In the first three lines, we are creating an &lt;strong&gt;instance&lt;&#x2F;strong&gt; of a component and then &lt;strong&gt;invoking&lt;&#x2F;strong&gt; it at the specified time with
+the given inputs. In the case of the adder, we instantiate the &lt;code class=&quot;code language-filament&quot;&gt;Add&lt;&#x2F;code&gt; component at time
+&lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; with inputs &lt;code class=&quot;code language-verilog&quot;&gt;in0&lt;&#x2F;code&gt; and &lt;code class=&quot;code language-verilog&quot;&gt;in1&lt;&#x2F;code&gt;. We bind
+this invocation to the name `&lt;code class=&quot;code language-filament&quot;&gt;add&lt;&#x2F;code&gt;, so we can refer to its output ports later, like when we pass it into the mux. When we try to
+compile this code, we get the following error:&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;error: source port does not provide value for as long as destination requires
+   ┌─ ..&amp;#x2F;..&amp;#x2F;proj&amp;#x2F;filament-blog1&amp;#x2F;alu.fil:14:37
+   │
+14 │     mux := new Mux[32]&amp;lt;&amp;#x27;G+3&amp;gt;(opsel, add.out, mult.out);
+   │                                     ^^^^^^^
+   │                                     │
+   │                                     source is available for [&amp;#x27;G, &amp;#x27;G+1]
+   │                                     required for [&amp;#x27;G+3, &amp;#x27;G+4]
+
+Compilation failed with 1 errors.&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+This error points out the exact problem we had to figure out ourselves earlier. The output of &lt;code class=&quot;code language-filament&quot;&gt;add&lt;&#x2F;code&gt; is available at &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt;, but
+the mux is expecting its inputs at &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G+3&lt;&#x2F;code&gt; because we invoked it at `&lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G+3&lt;&#x2F;code&gt; to account for the multiplier&#x27;s delay. Now that we know
+the problem, the fix is simple: extend the availability of &lt;code class=&quot;code language-filament&quot;&gt;add.out&lt;&#x2F;code&gt; using a register.
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;add := new Add[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+add_reg := new Register[32]&amp;lt;&amp;#x27;G, &amp;#x27;G+4&amp;gt;(add.out);
+
+mult := new FastMult[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+mux := new Mux[32]&amp;lt;&amp;#x27;G+3&amp;gt;(opsel, add_reg.out, mult.out);
+out = mux.out;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Now, we get a different error from the compiler.
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;error: event provided to invocation triggers more often that invocation&amp;#x27;s event&amp;#x27;s delay allows
+   ┌─ ..&amp;#x2F;..&amp;#x2F;proj&amp;#x2F;filament-blog1&amp;#x2F;alu.fil:14:33
+   │
+ 5 │ comp ALU&amp;lt;&amp;#x27;G:1&amp;gt;(
+   │             - this event triggers every 1 cycles
+   ·
+14 │     add_reg := new Register[32]&amp;lt;&amp;#x27;G, &amp;#x27;G+4&amp;gt;(add.out);
+   │                                 ^^ event provided to invoke triggers too often
+   │
+   ┌─ .&amp;#x2F;primitives&amp;#x2F;state.fil:6:29
+   │
+ 6 │    comp Register[WIDTH]&amp;lt;&amp;#x27;G: &amp;#x27;L-(&amp;#x27;G+1), &amp;#x27;L: 1&amp;gt;(
+   │                             --------- invocation&amp;#x27;s event is allowed to trigger every 3 cycles
+
+Compilation failed with 1 errors.&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+This error has to do with the &lt;strong&gt;delay&lt;&#x2F;strong&gt; of our ALU, which is associated with the ALU&#x27;s event &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt;. In our signature, we specified
+that &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; has a delay of 1, which means that ALU can process a new input every cycle. If we look more closely at the error, we
+see that it is telling us that because we use the register over the interval &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G, &amp;#x27;G+4&lt;&#x2F;code&gt;, we can&#x27;t possibly handle new inputs. It is most
+clear with an example: if we get a set of inputs at cycle 0, that computation will be using the register over cycles 0 to 4. If we then
+get a set of inputs at cycle 1, that computation will need to use the register over cycles 1 to 5. This overlap causes a problem, since
+we only have a single physical register. There are actually two fixes: we can either alter our signature to reflect this constraint by
+changing the delay of &lt;code class=&quot;code language-filament&quot;&gt;&amp;#x27;G&lt;&#x2F;code&gt; to 3, or we can alter our design to achieve a delay of 1. Let&#x27;s explore the second option:
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;add := new Add[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+r0 := new Register[32]&amp;lt;&amp;#x27;G, &amp;#x27;G+2&amp;gt;(add.out);
+r1 := new Register[32]&amp;lt;&amp;#x27;G+1, &amp;#x27;G+3&amp;gt;(r0.out);
+r2 := new Register[32]&amp;lt;&amp;#x27;G+2, &amp;#x27;G+4&amp;gt;(r1.out);
+
+mult := new FastMult[32]&amp;lt;&amp;#x27;G&amp;gt;(in0, in1);
+mux := new Mux[32]&amp;lt;&amp;#x27;G+3&amp;gt;(opsel, r2.out, mult.out);
+out = mux.out;&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+We add a chain of registers, which achieves our desired throughput. Now, there won&#x27;t be resource contention between two successive
+inputs. Now, our program type checks. Let&#x27;s test it.&lt;&#x2F;p&gt;
+&lt;p&gt;We specify our inputs to the Filament design with a JSON:
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;{
+    &amp;quot;opsel&amp;quot;: [1, 0, 1, 0],
+    &amp;quot;in0&amp;quot;:   [3, 4, 5, 6],
+    &amp;quot;in1&amp;quot;:   [8, 9, 2, 3]
+}&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+This means we drive &lt;code class=&quot;code language-filament&quot;&gt;opsel&lt;&#x2F;code&gt; with a value of 1 on cycle 0, a value of 0 on cycle 1, and so on. Our output looks like this:
+&lt;div class=&quot;code language-filament&quot;&gt;
+&lt;pre&gt;&lt;code&gt;{&amp;quot;out&amp;quot;: {&amp;quot;0&amp;quot;: [11], &amp;quot;1&amp;quot;: [36], &amp;quot;2&amp;quot;: [7], &amp;quot;3&amp;quot;: [18]}, &amp;quot;cycles&amp;quot;: 7}&lt;br&gt; &lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;div&gt;
+Success!&lt;&#x2F;p&gt;
+&lt;p&gt;With Filament, we were able to express the fundamental constraints on our circuit through language-level constructs. This allowed
+the compiler to automate much of the reasoning that we had to do ourself when we were using Verilog. One important limitation
+of Filament is that it can only express statically-scheduled circuits, which are circuits whose timing behavior is input-independent.
+In our example, our multiplier always took 4 cycles. However, you can imagine a multiplier that, for example, uses a left shift to
+compute its output if it detects that one of its operands is a power of two, for example. This is a dynamic circuit, which cannot
+currently be expressed in Filament.&lt;&#x2F;p&gt;
+&lt;p&gt;Still, this post has only scratched the surface of what is possible in Filament. We&#x27;ll get into the rest of it in future posts.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
