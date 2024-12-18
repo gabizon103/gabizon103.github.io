@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<meta name="robots" content="index, follow">
+
+
+
+
+
+
+
+
+
+
+
+
+<title>Compiler</title>
+
+
+
+<meta name="title" content="Compiler">
+
+
+
+<meta name="description" content="I built a compiler for a C-like language from scratch.">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gabizon103.github.io/projects/compiler/">
+
+<meta property="og:site_name" content="">
+
+
+<meta property="og:title" content="Compiler">
+
+
+<meta property="og:description" content="I built a compiler for a C-like language from scratch.">
+
+
+
+
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://gabizon103.github.io/projects/compiler/">
+
+<meta property="twitter:title" content="Compiler">
+
+
+<meta property="twitter:description" content="I built a compiler for a C-like language from scratch.">
+
+
+
+<link rel="canonical" href="https://gabizon103.github.io/projects/compiler/">
+
+
+
+
+<link rel="alternate" type="application/atom+xml" title="RSS" href="https://gabizon103.github.io/atom.xml"> 
+
+
+
+<link rel="stylesheet" type="text/css" href="https://speyll.github.io/suCSS/reset-min.css"/>
+<link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/suCSS-min.css"/>
+<link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/style.css"/>
+
+<script src="https://gabizon103.github.io/js/script.js" defer></script>
+    <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/prism.css">
+    <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/prism-futil.css">
+    <link rel="stylesheet" type="text/css" href="https://gabizon103.github.io/css/prism-verilog.css">
+</head>
+<body>
+    <script src=https://gabizon103.github.io/js/prism.js></script>
+    <script src=https://gabizon103.github.io/js/prism-futil.js></script>
+    <script src=https://gabizon103.github.io/js/prism-verilog.js></script>
+
+      <header>
+          
+
+  
+
+
+  <nav id="nav-bar">
+    
+      <a href="&#x2F;" class="">
+        
+        &#x2F;home&#x2F;
+      </a>
+    
+      <a href="&#x2F;projects" class="">
+        
+        &#x2F;projects&#x2F;
+      </a>
+    
+      <a href="&#x2F;blog" class="">
+        
+        &#x2F;blog&#x2F;
+      </a>
+    
+    <div>
+      <input type="checkbox" id="theme-toggle" style="display: none;">
+      <label for="theme-toggle" id="theme-toggle-label"><svg id="theme-icon" class="icons"><use href="https://gabizon103.github.io/icons.svg#lightMode"></use></svg></label>
+      <audio id="theme-sound">
+        <source src="https://gabizon103.github.io/click.ogg" type="audio/ogg">
+      </audio>
+    </div>
+  </nav>
+
+
+      </header>
+      <main>
+          
+<style>
+	div.mermaid {
+		width:25%;
+	}
+</style>
+
+<h1 class="title">
+  Compiler
+</h1>
+<p class="subtitle"><strong></strong></p>
+<p>For Cornell's compilers class, I worked with two teammates to design and implement
+a compiler for a procedural C-like language, called Eta. Here's a diagram of what our compiler
+looked like:</p>
+<p><img src="https://gabizon103.github.io/projects/compiler/compiler.png" alt="alt text" /></p>
+<p>Eta programs look like this:
+<div class="code language-C">
+<pre><code>use io
+
+sort(a: int[], len:int): int[] {
+  i:int = 0
+  n:int = len
+  while (i &lt; n) {
+    j:int = i
+    while (j &gt; 0) {
+      if (a[j-1] &gt; a[j]) {
+        swap:int = a[j]
+        a[j] = a[j-1]
+        a[j-1] = swap
+      }
+      j = j-1
+    }
+    i = i+1
+  }
+
+  return a
+}
+
+main(args: int[][]) {
+  data:int[] = {...}
+  data = sort(data, 26)
+  print(data)
+}<br> </code></pre>
+</div></p>
+<p>The first stage of our compiler, the lexer, breaks the program up into lexical tokens. For example,
+a program that looks like this:
+<div class="code language-C">
+<pre><code>use io
+
+main(args: int[][]) {
+  x:int = 4;
+  y:bool = true;
+}<br> </code></pre>
+</div></p>
+<p>would produce this data:
+<div class="code language-C">
+<pre><code>1:1 use
+1:5 id io
+3:1 id main
+3:5 (
+3:6 id args
+3:10 :
+3:12 int
+3:15 [
+3:16 ]
+3:17 [
+3:18 ]
+3:19 )
+3:21 {
+4:3 id x
+4:4 :
+4:5 int
+4:9 =
+4:11 integer 4
+4:12 ;
+5:3 id y
+5:4 :
+5:5 bool
+5:10 =
+5:12 true
+5:16 ;
+6:1 }<br> </code></pre>
+</div></p>
+<p>which specifies the location of each token in the source file.</p>
+<p>The next stage, the parser, takes the output of the lexer and forms an abstract syntax tree (AST).
+The AST for the above program looks like this:</p>
+<div class="code language-C">
+<pre><code>(
+ (
+  (use io)
+ )
+ (
+  (main((x int))(int)
+   (
+    (= (x int) 4)
+    (= (y bool) true)
+   )
+  )
+ )
+)<br> </code></pre>
+</div>
+<p>At this point, we know the syntactic form of the program. So, we can raise errors because of things like syntax errors.</p>
+<p>The next stage is the type checker, which traverses over the AST. When there are type errors, it raises an error.
+For example, an assignment like <code class="code language-C">y:int = true</code> would raise a type error because
+<code class="code language-C">y</code> is declared to have type <code class="code language-C">int</code> but a value
+of type <code class="code language-C">bool</code> gets assigned to it.</p>
+<p>Once we have verified the program free of syntax and type errors after parsing and type checking, we generate
+our intermediate representation, which is a lowered representation of the program that is closer to the level
+of assembly code. This is also where we perform our optimizations, like register allocation and common subexpression
+elimination.</p>
+<p>Finally, we generate assembly code from the intermediate representation. The intermediate representation and assembly
+outputs get pretty lengthy for nontrivial programs, so I've omitted them here. But by the end of this pipeline,
+we've generated assembly that conforms to the System V ABI and can be linked and executed!</p>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true});</script>
+
+      </main>
+      <footer>
+          <hr>
+<div id="footer-container">
+  
+  <div>
+    <p>Theme and color theme licensed under <a target="_blank" rel="noopener noreferrer" href="https://en.wikipedia.org/wiki/Licence_MIT">MIT</a>.<br>
+      Built with <a target="_blank" rel="noopener noreferrer" href="https://www.getzola.org">Zola</a> using <a target="_blank" rel="noopener noreferrer" href="https://github.com/Speyll/anemone">anemone</a> theme, <a target="_blank" rel="noopener noreferrer" href="https://speyll.github.io/suCSS/">suCSS</a> framework &amp; <a target="_blank" rel="noopener noreferrer" href="https://github.com/Speyll/veqev">veqev</a>.<br>
+    </p>
+
+  </div>
+  
+  <div>
+    <a class="no-style" target="_blank" rel="noopener noreferrer" href="https://gabizon103.github.io/atom.xml" title="Subscribe via RSS for updates."><svg class="icons"><use href="https://gabizon103.github.io/icons.svg#rss"></use></svg></a>
+  </div>
+  
+</div>
+
+      </footer>
+</body>
+</html>
