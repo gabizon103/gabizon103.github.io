@@ -123,16 +123,16 @@
 <p class="subtitle"><strong></strong></p>
 <p>For Cornell's VLSI class, two teammates and I designed an SRAM array from scratch using Cadence.</p>
 <p>Here's what a single SRAM cell schematic looks like:
-<img src="https://gabizon103.github.io/projects/sram/cell.png" alt="alt text" />
-We used a 6T design.</p>
-<p>This is the layout view:
-<img src="https://gabizon103.github.io/projects/sram/layout.png" alt="alt text" /></p>
+<img src="https://gabizon103.github.io/projects/sram/cell.png" alt="alt text" /></p>
+<p>We used a standard 6 transistor design, in a 90nm node.
+This is the layout view:</p>
+<p><img src="https://gabizon103.github.io/projects/sram/layout.png" alt="alt text" /></p>
 <p>Each word in our memory was 8 bits, so this is the layout view for a word:
 <img src="https://gabizon103.github.io/projects/sram/word_layout.png" alt="alt text" /></p>
 <p>Here's the full SRAM, which is 64 words.
 <img src="https://gabizon103.github.io/projects/sram/full_sram.png" alt="alt text" /></p>
 <p>In addition to implementing the SRAM, we also designed and verified the peripheral components. This included
-the row and column decoders, as well as the bitline conditioners.</p>
+the row and column decoders, as well as the bitline conditioners and sense amplifiers.</p>
 <p>I also worked on evaluating the performance of our SRAM cells. One experiment that I conducted involved
 profiling the propagation delay of a cell as a function of its driving voltage. The propagation delay
 is the amount of time it takes for a write to change the internal state of the cell.</p>
@@ -140,8 +140,16 @@ is the amount of time it takes for a write to change the internal state of the c
 <p>As expected, increasing the voltage decreases the propagation delay, meaning our circuit operates faster.
 However, it also means that our circuit uses more energy. Here's how we measured each data point:</p>
 <p><img src="https://gabizon103.github.io/projects/sram/wave.png" alt="alt text" /></p>
-<p>The word signal is the enable to the cell, and we measure the amount of time it takes for the bitline to change.</p>
-
+<p>The word signal is the enable to the cell, and we measure the amount of time it takes for the bitline to change.
+This page gives a brief overview of the project, check out the video below if you're interested in learning more!</p>
+<div class="youtube">
+  <iframe width="560" height="315"
+      src="https://www.youtube.com/embed/mj7Nm3uYApM"
+      webkitallowfullscreen
+      mozallowfullscreen
+      allowfullscreen>
+  </iframe>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script>mermaid.initialize({startOnLoad:true});</script>
 
