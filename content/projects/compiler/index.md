@@ -1,5 +1,5 @@
 +++
-title = "Compiler"
+title = "C-Like Compiler"
 description = "I built a compiler for a C-like language from scratch."
 +++
 
